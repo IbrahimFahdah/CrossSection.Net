@@ -32,9 +32,12 @@ namespace CrossSection.DataModel
     {
         public SectionDefinition(string name = "")
         {
+            Name = name;
             Output = new SectionOutput();
             Contours = new List<SectionContour>();
         }
+
+        public string Name { get; set; }
         public SectionOutput Output { get; private set; }
         public List<SectionContour> Contours { get; }
 

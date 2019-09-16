@@ -36,6 +36,7 @@ namespace CrossSection.Analysis
 
         public void Solve(SectionDefinition sec)
         {
+
             var mesh = sec.Triangulate(sec.BuildPolygon());
 
             GeomAnalysis(sec, mesh);

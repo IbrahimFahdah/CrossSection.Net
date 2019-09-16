@@ -24,6 +24,7 @@
 
 using CrossSection.DataModel;
 using CrossSection.Triangulation;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using TriangleNet;
@@ -65,9 +66,11 @@ namespace CrossSection
         public static Polygon BuildPolygon(this SectionDefinition sec)
         {
             Polygon _polygon = new Polygon();
+            int i = 0;
             foreach (var contour in sec.Contours)
             {
-                _polygon.Add(new Contour(contour.Points.Select(p => new Vertex(p.X, p.Y))));
+                _polygon.Add(new Contour(contour.Points.Select(p =>
+                new Vertex(p.X, p.Y) { ID = i++  }  )));
             }
 
             CreatedRegions(sec,_polygon);
@@ -77,13 +80,23 @@ namespace CrossSection
 
         public static Mesh Triangulate(this SectionDefinition sec,Polygon polygon)
         {
+
             var options = new ConstraintOptions();
             options.ConformingDelaunay = true;
             var quality = new QualityOptions()
             {
                 MinimumAngle = sec.SolutionSettings.MinimumAngle,
+                MaximumAngle = sec.SolutionSettings.MaximumAngle,
                 MaximumArea = sec.SolutionSettings.MaximumArea
             };
+
+            if(sec.SolutionSettings.MaximumArea==0.0)
+            {
+                //auto calc
+                var area=CalculateMeshArea((Mesh)polygon.Triangulate());
+                quality.MaximumArea= sec.SolutionSettings.Roughness* area;
+            }
+
             var mesh = (Mesh)polygon.Triangulate(options, quality);
 
             return mesh;
@@ -118,6 +131,23 @@ namespace CrossSection
             polygon.Regions.Add(new RegionPointer(p.X, p.Y, c.Material?.Id ?? -1));
             if (c.IsHole)
                 polygon.Holes.Add(p);
+        }
+
+        private static double CalculateMeshArea(Mesh mesh)
+        {
+            var totArea = 0.00;
+            foreach (var tri in mesh.Triangles)
+            {
+                Point[] p = new Point[3];
+                p[0] = tri.GetVertex(0);
+                p[1] = tri.GetVertex(1);
+                p[2] = tri.GetVertex(2);
+                var triArea = Math.Abs((p[2].X - p[0].X) * (p[1].Y - p[0].Y) -
+                      (p[1].X - p[0].X) * (p[2].Y - p[0].Y));
+                totArea += triArea;
+            }
+
+            return totArea;
         }
     }
 

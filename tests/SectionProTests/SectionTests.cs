@@ -40,13 +40,13 @@ namespace SectionProTests
         Solver _solver = new Solver();
         ShapeGeneratorHelper helper = new ShapeGeneratorHelper();
         SectionMaterial defaultMat = new SectionMaterial("dummy", 1, 1.0, 0.0, 1.0);
-
+        bool _writefiles=false;
 
         [TestMethod]
         public void CircleSec_Test()
         {
-            SectionDefinition sec = new SectionDefinition();
-            sec.SolutionSettings = new SolutionSettings(30, 10, true, 1e-8, 100);
+            SectionDefinition sec = new SectionDefinition(nameof(CircleSec_Test));
+            sec.SolutionSettings = new SolutionSettings(0.01);
             sec.Contours.Add(new SectionContour(helper.CreateCircle(25, 64), false, defaultMat));
             _solver.Solve(sec);
             Compare(nameof(CircleSec_Test), sec);
@@ -55,8 +55,8 @@ namespace SectionProTests
         [TestMethod]
         public void HollowCircleSec_Test()
         {
-            SectionDefinition sec = new SectionDefinition();
-            sec.SolutionSettings = new SolutionSettings(30, 5, true, 1e-8, 100);
+            SectionDefinition sec = new SectionDefinition(nameof(HollowCircleSec_Test));
+            sec.SolutionSettings = new SolutionSettings(0.01);
             sec.Contours.Add(new SectionContour(helper.CreateCircle(25, 64), false, defaultMat));
             sec.Contours.Add(new SectionContour(helper.CreateCircle(10, 64), true, defaultMat));
             _solver.Solve(sec);
@@ -66,8 +66,8 @@ namespace SectionProTests
         [TestMethod]
         public void CircleSecWithShift_Test()
         {
-            SectionDefinition sec = new SectionDefinition();
-            sec.SolutionSettings = new SolutionSettings(30, 5, true, 1e-8, 100);
+            SectionDefinition sec = new SectionDefinition(nameof(CircleSecWithShift_Test));
+            sec.SolutionSettings = new SolutionSettings(0.01);
             sec.Contours.Add(new SectionContour(helper.CreateCircle(25, 64), false, defaultMat));
             sec.ShiftPoints(100, 50);
             _solver.Solve(sec);
@@ -78,12 +78,8 @@ namespace SectionProTests
         [TestMethod]
         public void Chs_Test()
         {
-            SectionDefinition sec = new SectionDefinition();
-            sec.SolutionSettings = new SolutionSettings(30, 5, true, 1e-5, 100)
-            {
-                RunPlasticAnalysis = true,
-                RunWarpingAnalysis = false
-            };
+            SectionDefinition sec = new SectionDefinition(nameof(Chs_Test));
+            sec.SolutionSettings = new SolutionSettings(0.01);
             sec.Contours.Add(new SectionContour(helper.CreateCircle(21.3 / 2.0, 50), false, defaultMat));
             sec.Contours.Add(new SectionContour(helper.CreateCircle(21.3 / 2.0 - 2.6, 50), true, defaultMat));
             _solver.Solve(sec);
@@ -93,8 +89,8 @@ namespace SectionProTests
         [TestMethod]
         public void CruciformSec_Test()
         {
-            SectionDefinition sec = new SectionDefinition();
-            sec.SolutionSettings = new SolutionSettings(30, 20, true, 1e-8, 100);
+            SectionDefinition sec = new SectionDefinition(nameof(CruciformSec_Test));
+            sec.SolutionSettings = new SolutionSettings(0.01);
             sec.Contours.Add(new SectionContour(helper.CreateCruciformShape(200, 100, 10, 10, 5), false, defaultMat));
             _solver.Solve(sec);
             Compare(nameof(CruciformSec_Test), sec);
@@ -103,10 +99,10 @@ namespace SectionProTests
         [TestMethod]
         public void Ehs_Test()
         {
-            SectionDefinition sec = new SectionDefinition();
-            sec.SolutionSettings = new SolutionSettings(30, 5, true, 1e-5, 100);
-            sec.Contours.Add(new SectionContour(helper.CreateEllipse(1, 150.0 / 2.0, 75.0 / 2.0, 50), false, defaultMat));
-            sec.Contours.Add(new SectionContour(helper.CreateEllipse(1, 150.0 / 2.0 - 4.0, 75.0 / 2.0 - 4.0, 50), true, defaultMat));
+            SectionDefinition sec = new SectionDefinition(nameof(Ehs_Test));
+            sec.SolutionSettings = new SolutionSettings(0.01);
+            sec.Contours.Add(new SectionContour(helper.CreateEllipse(1, 150.0 / 2.0, 75.0 / 2.0, 100), false, defaultMat));
+            sec.Contours.Add(new SectionContour(helper.CreateEllipse(1, 150.0 / 2.0 - 4.0, 75.0 / 2.0 - 4.0, 100), true, defaultMat));
             _solver.Solve(sec);
             Compare(nameof(Ehs_Test), sec);
         }
@@ -114,8 +110,8 @@ namespace SectionProTests
         [TestMethod]
         public void ZedSection_Test()
         {
-            SectionDefinition sec = new SectionDefinition();
-            sec.SolutionSettings = new SolutionSettings(30, 50, true, 1e-5, 50);
+            SectionDefinition sec = new SectionDefinition(nameof(ZedSection_Test));
+            sec.SolutionSettings = new SolutionSettings(0.01);
             sec.Contours.Add(new SectionContour(helper.CreateZedShape(200, 100, 75, 20, 5, 10, 10), false, defaultMat));
             _solver.Solve(sec);
             Compare(nameof(ZedSection_Test), sec);
@@ -124,8 +120,8 @@ namespace SectionProTests
         [TestMethod]
         public void CeeSection_Test()
         {
-            SectionDefinition sec = new SectionDefinition();
-            sec.SolutionSettings = new SolutionSettings(30, 50, true, 1e-5, 50);
+            SectionDefinition sec = new SectionDefinition(nameof(CeeSection_Test));
+            sec.SolutionSettings = new SolutionSettings(0.01);
             sec.Contours.Add(new SectionContour(helper.CreateCeeShape(200, 100, 75, 5, 10, 10), false, defaultMat));
             _solver.Solve(sec);
             Compare(nameof(CeeSection_Test), sec);
@@ -135,8 +131,8 @@ namespace SectionProTests
         [TestMethod]
         public void AngleSec_Test()
         {
-            SectionDefinition sec = new SectionDefinition();
-            sec.SolutionSettings = new SolutionSettings(30, 100, true, 1e-5, 50) { RunWarpingAnalysis = true };
+            SectionDefinition sec = new SectionDefinition(nameof(AngleSec_Test));
+            sec.SolutionSettings = new SolutionSettings(0.01);
             sec.Contours.Add(new SectionContour(helper.CreateAngleShape(100, 100, 6, 8, 5, 8), false, defaultMat));
             sec.ShiftPoints(100, 25);
             _solver.Solve(sec);
@@ -146,8 +142,8 @@ namespace SectionProTests
         [TestMethod]
         public void ISec_Test()
         {
-            SectionDefinition sec = new SectionDefinition();
-            sec.SolutionSettings = new SolutionSettings(30, 50, true, 1e-5, 100);
+            SectionDefinition sec = new SectionDefinition(nameof(ISec_Test));
+            sec.SolutionSettings = new SolutionSettings(0.01);
             SectionMaterial steel = new SectionMaterial("Steel", 1, 200e3, 0.3, 500);
             sec.Contours.Add(new SectionContour(helper.CreateIShape(304, 165, 10.2, 6.1, 11.4, 8), false, steel));
             _solver.Solve(sec);
@@ -157,8 +153,8 @@ namespace SectionProTests
         [TestMethod]
         public void MonoISection_Test()
         {
-            SectionDefinition sec = new SectionDefinition();
-            sec.SolutionSettings = new SolutionSettings(30, 100, true, 1e-5, 50);
+            SectionDefinition sec = new SectionDefinition(nameof(MonoISection_Test));
+            sec.SolutionSettings = new SolutionSettings(0.01);
             sec.Contours.Add(new SectionContour(helper.CreateMonoISection(150, 100, 20, 30, 15, 300, 250, 50, 20, 25, 10), false, defaultMat));
             _solver.Solve(sec);
             Compare(nameof(MonoISection_Test), sec);
@@ -172,8 +168,8 @@ namespace SectionProTests
             SectionMaterial steel = new SectionMaterial("Steel", 1, 200e3, 0.3, 500);
             var timber = new SectionMaterial("Timber", 2, 8e3, 0.35, 20);
 
-            SectionDefinition sec = new SectionDefinition();
-            sec.SolutionSettings = new SolutionSettings(30, 200, true, 1e-5, 100) { RunWarpingAnalysis = true };
+            SectionDefinition sec = new SectionDefinition(nameof(CompositeSec_Test));
+            sec.SolutionSettings = new SolutionSettings(0.01);
             sec.Contours.Add(new SectionContour(helper.CreateIShape(304, 165, 10.2, 6.1, 11.4, 8), false, steel));
             var panel = new SectionContour(helper.CreateRectangle(50, 600), false, timber);
             panel.ShiftPoints(-217.5, 304);
@@ -182,13 +178,14 @@ namespace SectionProTests
             _solver.Solve(sec);
             Compare(nameof(CompositeSec_Test), sec);
 
+           
         }
 
         [TestMethod]
         public void CompundSec_Test()
         {
-            SectionDefinition sec = new SectionDefinition();
-            sec.SolutionSettings = new SolutionSettings(30, 50, true, 1e-5, 50) { RunWarpingAnalysis = true };
+            SectionDefinition sec = new SectionDefinition(nameof(CompundSec_Test));
+            sec.SolutionSettings = new SolutionSettings(0.01);
 
             (List<Point2D> outer, List<Point2D> inner) = helper.CreateRhsShape(150, 100, 6, 15, 8);
             sec.Contours.Add(new SectionContour(outer, false, defaultMat));
@@ -211,11 +208,13 @@ namespace SectionProTests
 
         }
 
-        private void Write(SectionDefinition sec)
+        private void Write(SectionDefinition sec, string folder)
         {
-            sec.WritePoly(@"C:\Users\ixf.SCI\Desktop\del\sec.poly");
-            sec.WriteMesh( @"C:\Users\ixf.SCI\Desktop\del\mesh");
-            sec.Write(@"C:\Users\ixf.SCI\Desktop\del\sec.txt");
+            var secName = !string.IsNullOrWhiteSpace(sec.Name) ? sec.Name : "unnamed";
+            string fileName = System.IO.Path.Combine(folder, secName);
+            sec.WritePoly(fileName+"_poly.poly");
+            sec.WriteMesh(fileName + "_mesh");
+            sec.Write(fileName+".txt");
         }
 
 
@@ -227,6 +226,11 @@ namespace SectionProTests
             JObject expectedJson = JsonConvert.DeserializeObject<JObject>(expected);
 
             Compare(expectedJson, actual);
+
+            if(_writefiles)
+            {
+                Write(sec, @"C:\Users\ixf.SCI\Desktop\del");
+            }
 
         }
 
