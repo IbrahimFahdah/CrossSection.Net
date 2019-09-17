@@ -34,13 +34,29 @@ using Newtonsoft.Json.Linq;
 
 namespace SectionProTests
 {
+    /// <summary>
+    /// Output from CrossSection.Net are compared with the output from the python package written by python package written by Robbie van Leeuwen 
+    /// and the output from other software
+    /// </summary>
     [TestClass]
     public class SectionTests
     {
         Solver _solver = new Solver();
         ShapeGeneratorHelper helper = new ShapeGeneratorHelper();
         SectionMaterial defaultMat = new SectionMaterial("dummy", 1, 1.0, 0.0, 1.0);
-        bool _writefiles=false;
+
+        /// <summary>
+        /// A flag used to choose if you want to write the mesh data to files.
+        /// This is used to check if section triangulation looks OK. 
+        /// Mesh files can be opened using the mesh viewer which comes with Triangle.Net https://archive.codeplex.com/?p=triangle 
+        /// </summary>
+        bool _writefiles =false;
+
+        /// <summary>
+        /// The folder where the mesh files will be written.
+        /// Must not be empty if _writefiles = true.
+        /// </summary>
+        string _meshFileFolder = @"";
 
         [TestMethod]
         public void CircleSec_Test()
@@ -208,6 +224,35 @@ namespace SectionProTests
 
         }
 
+        [TestMethod]
+        public void CustomSec1_Test()
+        {
+            SectionDefinition sec = new SectionDefinition(nameof(CustomSec1_Test));
+            sec.SolutionSettings = new SolutionSettings(0.005);
+
+            List<Point2D> boundary = new List<Point2D>();
+            boundary.Add(new Point2D(0,0));
+            boundary.Add(new Point2D(180, 0));
+            boundary.Add(new Point2D(180, 120));
+            boundary.Add(new Point2D(120, 120));
+            boundary.Add(new Point2D(180, 300));
+            boundary.Add(new Point2D(0, 300));
+
+            List<Point2D> hole = new List<Point2D>();
+            hole.Add(new Point2D(60, 60));
+            hole.Add(new Point2D(120, 60));
+            hole.Add(new Point2D(120, 120));
+            hole.Add(new Point2D(60, 120));
+
+            sec.Contours.Add(new SectionContour(boundary, false, defaultMat));
+            sec.Contours.Add(new SectionContour(hole, true, null));
+
+            _solver.Solve(sec);
+            Compare(nameof(CustomSec1_Test), sec);
+
+        }
+
+
         private void Write(SectionDefinition sec, string folder)
         {
             var secName = !string.IsNullOrWhiteSpace(sec.Name) ? sec.Name : "unnamed";
@@ -220,6 +265,11 @@ namespace SectionProTests
 
         private void Compare(string testName, SectionDefinition sec)
         {
+            if (_writefiles)
+            {
+                Write(sec, _meshFileFolder);
+            }
+
             JObject actual = BuildTestData(sec, testName);
 
             var expected = System.IO.File.ReadAllText($@"..\..\ExpectedData\{testName}.txt");
@@ -227,10 +277,7 @@ namespace SectionProTests
 
             Compare(expectedJson, actual);
 
-            if(_writefiles)
-            {
-                Write(sec, @"C:\Users\ixf.SCI\Desktop\del");
-            }
+
 
         }
 

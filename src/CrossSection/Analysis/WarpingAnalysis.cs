@@ -87,7 +87,7 @@ namespace CrossSection.Analysis
             sec.Output.SectionProperties.omega = omega.ToArray();
 
             //# determine the torsion constant
-            sec.Output.SectionProperties.j = omega * K * omega;
+            sec.Output.SectionProperties.j = sec.Output.SectionProperties.ixx_c + sec.Output.SectionProperties.iyy_c - omega * K * omega;
 
             //======================# assemble shear function load vectors
             Vector f_psi =new Vector(nodes.Count);
@@ -223,16 +223,6 @@ namespace CrossSection.Analysis
                     psi_shear2[i] = psi_shear[n[i]];
                     phi_shear2[i] = phi_shear[n[i]];
                 }
-
-       //         coords = Matrix<double>.Build.DenseOfArray( new double[,] { { 9.50372537, 6.85005177, 9.74078778, 8.17688857, 8.29541977,
-       //9.62225658}, { -173.80193004, -175.62613327, -176.98904027, -174.71403166,
-       //-176.30758677, -175.39548516} });
-       //          ixx_c = 23459492268502.53;
-       //          iyy_c = 8729239901048.53;
-       //          ixy_c = -0.046875;
-       //          nu_eff = sec.Output.SectionProperties.nu_eff;
-       //         psi_shear2 = Vector<double>.Build.DenseOfArray(new[] { -3.070950077988491e+18, -3.063716348285501e+18, -2.82982854023284e+18, -3.067562639799091e+18, -2.957073412520266e+18, -2.932929755075249e+18 });
-       //         phi_shear2 = Vector<double>.Build.DenseOfArray(new[] { -3.5507060616196666e+20, -3.546341445905855e+20, -3.558156029629006e+20, -3.5479764664843266e+20, -3.552366229858129e+20, -3.554702311099845e+20 });
 
                 (var kappa_x_el, var kappa_y_el, var kappa_xy_el) =
                     _fea.shear_coefficients(mat, coords, ixx_c, iyy_c, ixy_c, psi_shear2, phi_shear2, nu_eff);

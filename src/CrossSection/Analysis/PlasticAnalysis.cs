@@ -253,12 +253,7 @@ namespace CrossSection.Analysis
                 var y0 = item.GetVertex(0).Y;
                 var y1 = item.GetVertex(1).Y;
                 var y2 = item.GetVertex(2).Y;
-                var x3 = (x0 + x1) * 0.5;
-                var x4 = (x1 + x2) * 0.5;
-                var x5 = (x0 + x0) * 0.5;
-                var y3 = (y0 + y1) * 0.5;
-                var y4 = (y1 + y2) * 0.5;
-                var y5 = (y0 + y0) * 0.5;
+                var (x3, y3, x4, y4, x5, y5) = item.GetMidVertex();
 
                 Matrix coords =new Matrix(new double[,]
                                                        {

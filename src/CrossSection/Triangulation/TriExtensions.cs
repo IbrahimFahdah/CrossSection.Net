@@ -36,9 +36,9 @@ namespace CrossSection
 
     public static class TriExtensions
     {
-        
 
-        public static (double x3, double y3, double x4 , double y4, double x5, double y5)
+
+        public static (double x3, double y3, double x4, double y4, double x5, double y5)
             GetMidVertex(this Triangle item)
         {
             //Node 3 between 0,1
@@ -59,7 +59,7 @@ namespace CrossSection
             var y4 = (y1 + y2) * 0.5;
             var y5 = (y2 + y0) * 0.5;
 
-            return ( x3,  y3,  x4,  y4,  x5,  y5);
+            return (x3, y3, x4, y4, x5, y5);
         }
 
 
@@ -70,15 +70,13 @@ namespace CrossSection
             foreach (var contour in sec.Contours)
             {
                 _polygon.Add(new Contour(contour.Points.Select(p =>
-                new Vertex(p.X, p.Y) { ID = i++  }  )));
+                new Vertex(p.X, p.Y) { ID = i++ })));
             }
-
-            CreatedRegions(sec,_polygon);
 
             return _polygon;
         }
 
-        public static Mesh Triangulate(this SectionDefinition sec,Polygon polygon)
+        public static Mesh Triangulate(this SectionDefinition sec, Polygon polygon)
         {
 
             var options = new ConstraintOptions();
@@ -90,47 +88,57 @@ namespace CrossSection
                 MaximumArea = sec.SolutionSettings.MaximumArea
             };
 
-            if(sec.SolutionSettings.MaximumArea==0.0)
+            //=======temp meshing to find some data
+            var tmpMesh = (Mesh)polygon.Triangulate();
+            if (sec.SolutionSettings.MaximumArea == 0.0)
             {
                 //auto calc
-                var area=CalculateMeshArea((Mesh)polygon.Triangulate());
-                quality.MaximumArea= sec.SolutionSettings.Roughness* area;
+                var area = CalculateMeshArea(tmpMesh);
+                quality.MaximumArea = sec.SolutionSettings.Roughness * area;
             }
+
+            CreatedRegions(sec, polygon, tmpMesh);
+            //\=========
 
             var mesh = (Mesh)polygon.Triangulate(options, quality);
 
             return mesh;
         }
 
-        private static void CreatedRegions(this SectionDefinition sec,Polygon polygon)
+        private static void CreatedRegions(this SectionDefinition sec, Polygon polygon, Mesh mesh)
         {
             polygon.Regions.Clear();
             polygon.Holes.Clear();
+
             foreach (var contour in sec.Contours)
             {
-                AddRegionPoint(polygon, contour, sec.Contours.Where(c => c != contour).ToList());
+                var inside = false;
+                foreach (var item in mesh.Triangles)
+                {
+                    var (x3, y3, x4, y4, x5, y5) = item.GetMidVertex();
+                    Point p = new Point((x3 + x4 + x5) / 3, (y3 + y4 + y5) / 3);
 
-                //GetRegionPointer(contour) is not used because doesn't consider contour inside another such a hole
-                //_polygon.Regions.Add(GetRegionPointer(contour));
-            }
-        }
+                    inside = PolygonHelper.IsPointInPolygon(p, contour, contour.IsHole ? new List<SectionContour>() :
+                        sec.Contours.Where(c => c != contour).ToList());
 
-        private static void AddRegionPoint(Polygon polygon, SectionContour c, List<SectionContour> otherContours)
-        {
-            TriangleNet.Geometry.Point p = null;
-            if (c.IsHole)
-            {
-                p = PolygonHelper.FindPointInPolygon(c, new List<SectionContour>(), 100);
-            }
-            else
-            {
-                //find a point inside the counter but not in any other.
-                p = PolygonHelper.FindPointInPolygon(c, otherContours, 100);
+                    if (inside)
+                    {
+                        polygon.Regions.Add(new RegionPointer(p.X, p.Y, contour.Material?.Id ?? -1));
+                        if (contour.IsHole)
+                        {
+                            polygon.Holes.Add(p);
+                        }
+                        break;
+                    }
+                }
+
+                if (inside == false)
+                    throw new Exception();
 
             }
-            polygon.Regions.Add(new RegionPointer(p.X, p.Y, c.Material?.Id ?? -1));
-            if (c.IsHole)
-                polygon.Holes.Add(p);
+
+            //GetRegionPointer(contour) is not used because doesn't consider contour inside another such a hole
+             //_polygon.Regions.Add(GetRegionPointer(contour));
         }
 
         private static double CalculateMeshArea(Mesh mesh)
@@ -149,6 +157,39 @@ namespace CrossSection
 
             return totArea;
         }
+
+        //private static void CreatedRegions(this SectionDefinition sec, Polygon polygon)
+        //{
+        //    polygon.Regions.Clear();
+        //    polygon.Holes.Clear();
+        //    foreach (var contour in sec.Contours)
+        //    {
+        //        AddRegionPoint(polygon, contour, sec.Contours.Where(c => c != contour).ToList());
+
+        //        //GetRegionPointer(contour) is not used because doesn't consider contour inside another such a hole
+        //        //_polygon.Regions.Add(GetRegionPointer(contour));
+        //    }
+        //}
+
+        //private static void AddRegionPoint(Polygon polygon, SectionContour c, List<SectionContour> otherContours)
+        //{
+        //    TriangleNet.Geometry.Point p = null;
+        //    if (c.IsHole)
+        //    {
+        //        p = PolygonHelper.FindPointInPolygon(c, new List<SectionContour>(), 100);
+        //    }
+        //    else
+        //    {
+        //        //find a point inside the counter but not in any other.
+        //        p = PolygonHelper.FindPointInPolygon(c, otherContours, 100);
+
+        //    }
+        //    polygon.Regions.Add(new RegionPointer(p.X, p.Y, c.Material?.Id ?? -1));
+        //    if (c.IsHole)
+        //        polygon.Holes.Add(p);
+        //}
+
+
     }
 
 }
