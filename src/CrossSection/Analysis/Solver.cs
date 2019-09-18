@@ -37,11 +37,11 @@ namespace CrossSection.Analysis
         public void Solve(SectionDefinition sec)
         {
 
-            var mesh = sec.Triangulate(sec.BuildPolygon());
+            var mesh = sec.Triangulate();
 
             GeomAnalysis(sec, mesh);
 
-            //# shift geometry such that the origin is at the centroid
+            //# shift contours such that the origin is at the centroid
             sec.ShiftPoints(-sec.Output.SectionProperties.cx, -sec.Output.SectionProperties.cy);
 
             if(sec.SolutionSettings.RunPlasticAnalysis)
@@ -52,7 +52,9 @@ namespace CrossSection.Analysis
             {
                 new WarpingAnalysis().Solve(sec); 
             }
-                
+
+            // restore contours original location
+            sec.ShiftPoints(sec.Output.SectionProperties.cx, sec.Output.SectionProperties.cy);
         }
 
         private void GeomAnalysis(SectionDefinition sec, Mesh mesh)

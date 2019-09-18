@@ -72,10 +72,16 @@ namespace CrossSection
                 _polygon.Add(new Contour(contour.Points.Select(p =>
                 new Vertex(p.X, p.Y) { ID = i++ })));
             }
+           
+            CreatedRegions(sec, _polygon);
 
             return _polygon;
         }
 
+        public static Mesh Triangulate(this SectionDefinition sec)
+        {
+            return sec.Triangulate(sec.BuildPolygon());
+        }
         public static Mesh Triangulate(this SectionDefinition sec, Polygon polygon)
         {
 
@@ -89,31 +95,41 @@ namespace CrossSection
             };
 
             //=======temp meshing to find some data
-            var tmpMesh = (Mesh)polygon.Triangulate();
+            var dummyMesh = (Mesh)polygon.Triangulate();
             if (sec.SolutionSettings.MaximumArea == 0.0)
             {
                 //auto calc
-                var area = CalculateMeshArea(tmpMesh);
+                var area = CalculateMeshArea(dummyMesh);
                 quality.MaximumArea = sec.SolutionSettings.Roughness * area;
             }
-
-            CreatedRegions(sec, polygon, tmpMesh);
             //\=========
 
             var mesh = (Mesh)polygon.Triangulate(options, quality);
 
+
             return mesh;
         }
 
-        private static void CreatedRegions(this SectionDefinition sec, Polygon polygon, Mesh mesh)
+        /// <summary>
+        /// Add regions and holes to polygon.
+        /// A dummy mesh is used to create some points inside the contours. 
+        /// Using dummy mesh is more reliable than using FindPointInPolygon method which sometimes returns points on the edges not inside.
+        /// </summary>
+        /// <param name="sec"></param>
+        /// <param name="polygon"></param>
+        private static void CreatedRegions(this SectionDefinition sec, Polygon polygon)
         {
+            //first clear regions and holes
             polygon.Regions.Clear();
             polygon.Holes.Clear();
+
+            //use dummy mesh to find points insides the contours to create the regions
+            var dummyMesh = (Mesh)polygon.Triangulate();
 
             foreach (var contour in sec.Contours)
             {
                 var inside = false;
-                foreach (var item in mesh.Triangles)
+                foreach (var item in dummyMesh.Triangles)
                 {
                     var (x3, y3, x4, y4, x5, y5) = item.GetMidVertex();
                     Point p = new Point((x3 + x4 + x5) / 3, (y3 + y4 + y5) / 3);

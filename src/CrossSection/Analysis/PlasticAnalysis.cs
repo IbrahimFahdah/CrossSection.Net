@@ -47,7 +47,7 @@ namespace CrossSection.Analysis
             _sec = sec;
 
             //need to triangulate as the section may have been shifted 
-            _mesh = _sec.Triangulate(_sec.BuildPolygon());
+            _mesh = _sec.Triangulate();
 
             calculate_plastic_properties(sec, _mesh);
         }

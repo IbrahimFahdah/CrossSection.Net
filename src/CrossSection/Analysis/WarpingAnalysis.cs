@@ -71,7 +71,7 @@ namespace CrossSection.Analysis
 
             _sec = sec;
 
-            _mesh = _sec.Triangulate(_sec.BuildPolygon());
+            _mesh = _sec.Triangulate();
 
             var maxId = _mesh.Vertices.Max(x => x.ID);
 

@@ -50,7 +50,7 @@ namespace SectionProTests
         /// This is used to check if section triangulation looks OK. 
         /// Mesh files can be opened using the mesh viewer which comes with Triangle.Net https://archive.codeplex.com/?p=triangle 
         /// </summary>
-        bool _writefiles =false;
+        bool _writefiles = false;
 
         /// <summary>
         /// The folder where the mesh files will be written.
@@ -228,7 +228,7 @@ namespace SectionProTests
         public void CustomSec1_Test()
         {
             SectionDefinition sec = new SectionDefinition(nameof(CustomSec1_Test));
-            sec.SolutionSettings = new SolutionSettings(0.005);
+            sec.SolutionSettings = new SolutionSettings(0.002);
 
             List<Point2D> boundary = new List<Point2D>();
             boundary.Add(new Point2D(0,0));
