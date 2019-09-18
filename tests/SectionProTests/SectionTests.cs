@@ -252,6 +252,43 @@ namespace SectionProTests
 
         }
 
+        [TestMethod]
+        public void CustomSec2_Test()
+        {
+            SectionDefinition sec = new SectionDefinition(nameof(CustomSec2_Test));
+            sec.SolutionSettings = new SolutionSettings(0.002);
+
+            List<Point2D> boundary = new List<Point2D>();
+            boundary.Add(new Point2D(0, 0));
+            boundary.Add(new Point2D(0, 300));
+            boundary.Add(new Point2D(1300, 300));
+            boundary.Add(new Point2D(990, 0));
+            sec.Contours.Add(new SectionContour(boundary, false, defaultMat));
+
+            List<Point2D> hole = null;
+            for (int i = 0; i < 4; i++)
+            {
+                var x0 = 50 + i * 230;
+                hole = new List<Point2D>();
+                hole.Add(new Point2D(x0, 50));
+                hole.Add(new Point2D(x0+180, 50));
+                hole.Add(new Point2D(x0 + 180, 250));
+                hole.Add(new Point2D(x0, 250));
+                sec.Contours.Add(new SectionContour(hole, true, null));
+            }
+
+            hole = new List<Point2D>();
+            hole.Add(new Point2D(970, 50));
+            hole.Add(new Point2D(970, 250));
+            hole.Add(new Point2D(1175, 250));
+            sec.Contours.Add(new SectionContour(hole, true, null));
+
+
+            _solver.Solve(sec);
+            Compare(nameof(CustomSec2_Test), sec);
+
+        }
+
 
         private void Write(SectionDefinition sec, string folder)
         {

@@ -176,22 +176,26 @@ namespace CrossSection.DataModel
 
         #region plastic
         /// <summary>
-        /// X coordinate of the global plastic centroid
+        /// X coordinate of the global plastic centroid.
+        /// This is relative to the elastic centroid.
         /// </summary>
         public double x_pc { get; set; }
 
         /// <summary>
-        /// Y coordinate of the global plastic centroid
+        /// Y coordinate of the global plastic centroid.
+        /// This is relative to the elastic centroid.
         /// </summary>
         public double y_pc { get; set; }
 
         /// <summary>
-        /// 11 coordinate of the principal plastic centroid
+        /// 11 coordinate of the principal plastic centroid.
+        /// This is relative to the elastic centroid.
         /// </summary>
         public double x11_pc { get; set; }
 
         /// <summary>
-        /// 22 coordinate of the principal plastic centroid
+        /// 22 coordinate of the principal plastic centroid.
+        /// This is relative to the elastic centroid.
         /// </summary>
         public double y22_pc { get; set; }
 
@@ -268,32 +272,38 @@ namespace CrossSection.DataModel
         public double Delta_s { get; set; }
 
         /// <summary>
-        /// X coordinate of the shear centre(elasticity approach)
+        /// X coordinate of the shear centre(elasticity approach).
+        /// This is relative to the elastic centroid.
         /// </summary>
         public double x_se { get; set; }
 
         /// <summary>
-        /// Y coordinate of the shear centre(elasticity approach)
+        /// Y coordinate of the shear centre(elasticity approach).
+        /// This is relative to the elastic centroid.
         /// </summary>
         public double y_se { get; set; }
 
         /// <summary>
-        /// 11 coordinate of the shear centre(elasticity approach)
+        /// 11 coordinate of the shear centre(elasticity approach).
+        /// This is relative to the elastic centroid.
         /// </summary>
         public double x11_se { get; set; }
 
         /// <summary>
-        /// 22 coordinate of the shear centre(elasticity approach)
+        /// 22 coordinate of the shear centre(elasticity approach).
+        /// This is relative to the elastic centroid.
         /// </summary>
         public double y22_se { get; set; }
 
         /// <summary>
-        /// X coordinate of the shear centre(Trefftz’s approach)
+        /// X coordinate of the shear centre(Trefftz’s approach).
+        /// This is relative to the elastic centroid.
         /// </summary>
         public double x_st { get; set; }
 
         /// <summary>
-        /// Y coordinate of the shear centre(Trefftz’s approach)
+        /// Y coordinate of the shear centre(Trefftz’s approach).
+        /// This is relative to the elastic centroid.
         /// </summary>
         public double y_st { get; set; }
 

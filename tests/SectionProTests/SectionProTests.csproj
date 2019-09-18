@@ -79,6 +79,7 @@
     <Content Include="ExpectedData\CompundSec_Test.txt" />
     <Content Include="ExpectedData\CruciformSec_Test.txt" />
     <Content Include="ExpectedData\CustomSec1_Test.txt" />
+    <Content Include="ExpectedData\CustomSec2_Test.txt" />
     <Content Include="ExpectedData\Ehs_Test.txt" />
     <Content Include="ExpectedData\HollowCircleSec_Test.txt" />
     <Content Include="ExpectedData\ISec_Test.txt" />
