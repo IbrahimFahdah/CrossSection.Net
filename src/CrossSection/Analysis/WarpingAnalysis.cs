@@ -69,6 +69,7 @@ namespace CrossSection.Analysis
         public void Solve(SectionDefinition sec)
         {
 
+            Matrix.count = 0;
             _sec = sec;
 
             _mesh = _sec.Triangulate();
@@ -81,9 +82,38 @@ namespace CrossSection.Analysis
             (var K, var f_torsion) = assemble_torsion(sec, _mesh, nodes);
 
             CholeskyDecom Cholesky = new CholeskyDecom(K);
+            //====================
+            //CholeskyDecom Cholesky2 = new CholeskyDecom();
+            //var tmp = K.ToArray();
+            //var ss = alglib.spdmatrixcholesky(ref tmp, nodes.Count, false);
+            //Cholesky2.L = tmp;
+            //for (int i = 0; i < nodes.Count; i++)
+            //    for (int j = 0; j < i; j++)
+            //        tmp[j, i] = 0.0;
+            //for (int i = 0; i < nodes.Count; i++)
+            //    for (int j = 0; j < nodes.Count; j++)
+            //        if (Cholesky2.L[i, j] != Cholesky.L[i,j])
+            //        {
+            //            var sds = Cholesky.L[i, j]- Cholesky2.L[i, j] ;
+            //        }
+
+            
+            //=//====================
 
             //# solve for warping function
             var omega = Cholesky.Solve(f_torsion);
+
+//             int info;
+//            alglib.densesolverreport rep;
+// double[] xx;
+//            alglib.spdmatrixcholeskysolve(
+//tmp,
+//nodes.Count,
+//false,
+//f_torsion.ToArray(),
+//out info, out rep, out xx,
+//null);
+
             sec.Output.SectionProperties.omega = omega.ToArray();
 
             //# determine the torsion constant
@@ -93,11 +123,13 @@ namespace CrossSection.Analysis
             Vector f_psi =new Vector(nodes.Count);
             Vector f_phi = new Vector(nodes.Count);
 
+             int n0, n1, n2, n3, n4, n5;
+            var coords = new Matrix(2, 6);
             foreach (var item in _mesh.Triangles)
             {
 
                 var mat = sec.Contours.First(c => c.Material?.Id == item.Label).Material;
-                (var coords, var n0, var n1, var n2, var n3, var n4, var n5) = TriangleData(item, sec, nodes);
+                 TriangleData(item, sec, nodes, ref coords, out n0, out n1, out n2, out n3, out n4, out n5);
 
                 var ixx_c = sec.Output.SectionProperties.ixx_c;
                 var iyy_c = sec.Output.SectionProperties.iyy_c;
@@ -132,7 +164,7 @@ namespace CrossSection.Analysis
             foreach (var item in _mesh.Triangles)
             {
                 var mat = sec.Contours.First(c => c.Material?.Id == item.Label).Material;
-                (var coords, var n0, var n1, var n2, var n3, var n4, var n5) = TriangleData(item, sec, nodes);
+                TriangleData(item, sec, nodes, ref coords, out n0, out n1, out n2, out n3, out n4, out n5);
 
                 var ixx_c = sec.Output.SectionProperties.ixx_c;
                 var iyy_c = sec.Output.SectionProperties.iyy_c;
@@ -208,7 +240,7 @@ namespace CrossSection.Analysis
             foreach (var item in _mesh.Triangles)
             {
                 var mat = sec.Contours.First(c => c.Material?.Id == item.Label).Material;
-                (var coords, var n0, var n1, var n2, var n3, var n4, var n5) = TriangleData(item, sec, nodes);
+                TriangleData(item, sec, nodes, ref coords, out n0, out n1, out n2, out n3, out n4, out n5);
 
                 var ixx_c = sec.Output.SectionProperties.ixx_c;
                 var iyy_c = sec.Output.SectionProperties.iyy_c;
@@ -269,7 +301,7 @@ namespace CrossSection.Analysis
             foreach (var item in _mesh.Triangles)
             {
                 var mat = sec.Contours.First(c => c.Material?.Id == item.Label).Material;
-                (var coords, var n0, var n1, var n2, var n3, var n4, var n5) = TriangleData(item, sec, nodes);
+                TriangleData(item, sec, nodes, ref coords, out n0, out n1, out n2, out n3, out n4, out n5);
 
 
                 var phi = sec.Output.SectionProperties.phi;
@@ -320,81 +352,47 @@ namespace CrossSection.Analysis
             Vector ff =new Vector(nodes.Count);
             Matrix kk = new Matrix(nodes.Count, nodes.Count);
 
+            //# initialise stiffness matrix and load vector
+            Matrix k_el = null;// new Matrix(6, 6);
+            Vector f_el = null;// new Vector(6);
+            int n0, n1, n2, n3, n4, n5;
+            var coords = new Matrix(2, 6);
 
             foreach (var item in mesh.Triangles)
             {
                 var mat = sec.Contours.First(c => c.Material?.Id == item.Label).Material;
-                (var coords, var n0, var n1, var n2, var n3, var n4, var n5) = TriangleData(item, sec, nodes);
-                //var mat = sec.Contours.First(c => c.Material?.Id == item.Label).Material;
-                //var e = mat.elastic_modulus;
-                //var g = mat.shear_modulus;
 
-                //Vertex v0 = item.GetVertex(0);
-                //Vertex v1 = item.GetVertex(1);
-                //Vertex v2 = item.GetVertex(2);
-
-                ////Node 3 between 0,1
-                ////Node 4 between 1,2
-                ////Node 5 between 2,0
-
-                //var x0 = item.GetVertex(0).X;
-                //var x1 = item.GetVertex(1).X;
-                //var x2 = item.GetVertex(2).X;
-                //var y0 = item.GetVertex(0).Y;
-                //var y1 = item.GetVertex(1).Y;
-                //var y2 = item.GetVertex(2).Y;
-
-                //Vertex v3 = new Vertex((x0 + x1) * 0.5, (y0 + y1) * 0.5);
-
-
-                //var x3 = (x0 + x1) * 0.5;
-                //var x4 = (x1 + x2) * 0.5;
-                //var x5 = (x2 + x0) * 0.5;
-                //var y3 = (y0 + y1) * 0.5;
-                //var y4 = (y1 + y2) * 0.5;
-                //var y5 = (y2 + y0) * 0.5;
-
-                //Matrix<double> coords = M.DenseOfArray(new double[,]
-                //{ { x0, x1, x2,  x3, x4, x5},
-                //         {  y0,y1,y2, y3,y4,y5}, });
-
-
-
+                TriangleData(item, sec, nodes, ref coords, out n0, out n1, out n2, out n3, out n4, out n5);
+            
                 // # calculate the element stiffness matrix and torsion load vector
-                (Matrix k_el, Vector f_el) el = _fea.torsion_properties(mat, coords);
-
-                //var n = new TriNode[6];
-                //n[0] = FindNode(nodes, v0.ID, v0.ID);
-                //n[1] = FindNode(nodes, v1.ID, v1.ID);
-                //n[2] = FindNode(nodes, v2.ID, v2.ID);
-                //n[3] = FindNode(nodes, v0.ID, v1.ID);
-                //n[4] = FindNode(nodes, v1.ID, v2.ID);
-                //n[5] = FindNode(nodes, v0.ID, v2.ID);
+                _fea.torsion_properties(mat, coords, ref k_el, ref f_el);
 
                 var n = new[] { n0, n1, n2, n3, n4, n5 };
 
-                ff[n0] += el.f_el[0];
-                ff[n1] += el.f_el[1];
-                ff[n2] += el.f_el[2];
-                ff[n3] += el.f_el[3];
-                ff[n4] += el.f_el[4];
-                ff[n5] += el.f_el[5];
+                ff[n0] += f_el[0];
+                ff[n1] += f_el[1];
+                ff[n2] += f_el[2];
+                ff[n3] += f_el[3];
+                ff[n4] += f_el[4];
+                ff[n5] += f_el[5];
 
                 for (int i = 0; i < 6; i++)
                 {
                     for (int j = 0; j < 6; j++)
                     {
-                        kk[n[i], n[j]] += el.k_el[i, j];
+                        kk[n[i], n[j]] += k_el[i, j];
                     }
                 }
+
+                //MatrixCache.Dispose(k_el);
             }
 
             return (kk, ff);
 
         }
 
-        private (Matrix coords, int n0, int n1, int n2, int n3, int n4, int n5)
-            TriangleData(Triangle item, SectionDefinition sec, List<TriNode> nodes)
+        private void 
+            TriangleData(Triangle item, SectionDefinition sec, List<TriNode> nodes, ref Matrix coords,out int n0, out int n1, out int n2, out int n3, out int n4, out int n5)
         {
            
             var mat = sec.Contours.First(c => c.Material?.Id == item.Label).Material;
@@ -427,20 +425,35 @@ namespace CrossSection.Analysis
             var y4 = (y1 + y2) * 0.5;
             var y5 = (y2 + y0) * 0.5;
 
-            Matrix coords = new Matrix(new double[,]
-            { { x0, x1, x2,  x3, x4, x5},
-                         {  y0,y1,y2, y3,y4,y5}, });
+
+            coords[0, 0] = x0;
+            coords[0, 1] = x1;
+            coords[0, 2] = x2;
+            coords[0, 3] = x3;
+            coords[0, 4] = x4;
+            coords[0, 5] = x5;
+
+            coords[1, 0] = y0;
+            coords[1, 1] = y1;
+            coords[1, 2] = y2;
+            coords[1, 3] = y3;
+            coords[1, 4] = y4;
+            coords[1, 5] = y5;
+
+            //coords = new Matrix(new double[,]
+            //{ { x0, x1, x2,  x3, x4, x5},
+            //             {  y0,y1,y2, y3,y4,y5}, });
 
 
-            var n = new TriNode[6];
-            n[0] = FindNode(nodes, v0.ID, v0.ID);
-            n[1] = FindNode(nodes, v1.ID, v1.ID);
-            n[2] = FindNode(nodes, v2.ID, v2.ID);
-            n[3] = FindNode(nodes, v0.ID, v1.ID);
-            n[4] = FindNode(nodes, v1.ID, v2.ID);
-            n[5] = FindNode(nodes, v0.ID, v2.ID);
+            //var n = new TriNode[6];
+            n0 = FindNode(nodes, v0.ID, v0.ID).Index;
+            n1 = FindNode(nodes, v1.ID, v1.ID).Index;
+            n2 = FindNode(nodes, v2.ID, v2.ID).Index;
+            n3 = FindNode(nodes, v0.ID, v1.ID).Index;
+            n4 = FindNode(nodes, v1.ID, v2.ID).Index;
+            n5 = FindNode(nodes, v0.ID, v2.ID).Index;
 
-            return (coords, n[0].Index, n[1].Index, n[2].Index, n[3].Index, n[4].Index, n[5].Index);
+           // return (coords, n[0].Index, n[1].Index, n[2].Index, n[3].Index, n[4].Index, n[5].Index);
 
         }
         private static List<TriNode> BuildTriNodesList(Mesh mesh)

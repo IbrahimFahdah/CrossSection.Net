@@ -287,6 +287,7 @@ namespace SectionProTests
             _solver.Solve(sec);
             Compare(nameof(CustomSec2_Test), sec);
 
+            var dd = Matrix.count;
         }
 
 

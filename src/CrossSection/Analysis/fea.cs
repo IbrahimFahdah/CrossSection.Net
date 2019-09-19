@@ -53,13 +53,14 @@ namespace CrossSection
 
             //Gauss points for 6 point Gaussian integration
             var gps = gauss_points(6);
+            Matrix B = null;
             for (int i = 0; i < gps.RowCount; i++)
             {
                 var gp = gps.Row(i);
                 Vector N;
-                Matrix B;
+
                 double j;
-                shape_function(coords, gp, out N, out B, out j);
+                shape_function(coords, gp, out N, ref B, out j);
                 area += gp[0] * j;
 
                 var x = N * coords.Row(1);
@@ -97,14 +98,14 @@ namespace CrossSection
             var force = 0.0;
 
             var gps = gauss_points(3);
-
+            Matrix B = null;
             for (int i = 0; i < gps.RowCount; i++)
             {
                 var gp = gps.Row(i);
                 Vector N;
-                Matrix B;
+             
                 double j;
-                shape_function(coords, gp, out N, out B, out j);
+                shape_function(coords, gp, out N, ref B, out j);
                 area += gp[0] * j;
 
                 var x = N * coords.Row(1);
@@ -130,31 +131,46 @@ namespace CrossSection
         /// <param name="mat"></param>
         /// <param name="coords"></param>
         /// <returns>Element stiffness matrix *(k_el)* and element torsion load vector* (f_el) *</returns>
-        public (Matrix k_el, Vector f_el) torsion_properties(SectionMaterial mat,
-            Matrix coords)
+        public void torsion_properties(SectionMaterial mat,  Matrix coords,ref Matrix k_el, ref Vector f_el)
         {
             //# initialise stiffness matrix and load vector
-            Matrix k_el = new Matrix(6, 6);
-            Vector f_el = new Vector(6);
+            if(k_el==null)
+            {
+                k_el = new Matrix(6, 6);
+            }
+            else
+            {
+                k_el.Clear();
+            }
+
+            if (f_el == null)
+            {
+                f_el = new Vector(6);
+            }
+            else
+            {
+                f_el.Clear();
+            }
+
 
             //# Gauss points for 6 point Gaussian integration
             var gps = gauss_points(6);
-
+            Matrix B = null;
             Vector Nxy = new Vector(2);
             for (int i = 0; i < gps.RowCount; i++)
             {
                 var gp = gps.Row(i);
                 Vector N;
-                Matrix B;
+
                 double j;
-                shape_function(coords, gp, out N, out B, out j);
+                shape_function(coords, gp, out N, ref B, out j);
 
                 //# determine x and y position at Gauss point
                 var Nx = N * coords.Row(0);
                 var Ny = N * coords.Row(1);
 
                 //# calculated modulus weighted stiffness matrix and load vector
-                k_el += gp[0] * (B.Transpose * B) * j * mat.elastic_modulus;
+                k_el.Append( gp[0] * (B.Transpose * B) * j * mat.elastic_modulus);
 
                 Nxy[0] = Ny;
                 Nxy[1] = -Nx;
@@ -162,7 +178,6 @@ namespace CrossSection
             }
 
 
-            return (k_el, f_el);
         }
 
         /// <summary>
@@ -187,13 +202,14 @@ namespace CrossSection
 
             Matrix d = new Matrix(2, 1);
             Matrix h = new Matrix(2, 1);
+            Matrix B = null;
             for (int i = 0; i < gps.RowCount; i++)
             {
                 var gp = gps.Row(i);
                 Vector N;
-                Matrix B;
+             
                 double j;
-                shape_function(coords, gp, out N, out B, out j);
+                shape_function(coords, gp, out N, ref B, out j);
 
                 //# determine x and y position at Gauss point
                 var Nx = N * coords.Row(0);
@@ -217,8 +233,11 @@ namespace CrossSection
 
                 f_phi += gp[0] * (nu / 2 * (B.Transpose * h).Transpose.Row(0) +
                                   2 * (1 + nu) * N * (iyy * Ny - ixy * Nx)) * j * mat.elastic_modulus;
+
+              //  MatrixCache.Dispose(B);
             }
 
+          //  MatrixCache.Dispose(d,h);
 
             return (f_psi, f_phi);
         }
@@ -247,14 +266,14 @@ namespace CrossSection
             var i_yomega = 0.0;
 
             var gps = gauss_points(6);
-
+            Matrix B = null;
             for (int i = 0; i < gps.RowCount; i++)
             {
                 var gp = gps.Row(i);
                 Vector N;
-                Matrix B;
+              
                 double j;
-                shape_function(coords, gp, out N, out B, out j);
+                shape_function(coords, gp, out N, ref B, out j);
 
                 //# determine x and y position at Gauss point
                 var Nx = N * coords.Row(0);
@@ -297,13 +316,14 @@ namespace CrossSection
             var gps = gauss_points(6);
             Vector d = new Vector(2);
             Vector h = new Vector(2);
+            Matrix B = null;
             for (int i = 0; i < gps.RowCount; i++)
             {
                 var gp = gps.Row(i);
                 Vector N;
-                Matrix B;
+            
                 double j;
-                shape_function(coords, gp, out N, out B, out j);
+                shape_function(coords, gp, out N, ref B, out j);
 
                 //# determine x and y position at Gauss point
                 var Nx = N * coords.Row(0);
@@ -355,13 +375,14 @@ namespace CrossSection
             var gps = gauss_points(6);
             Matrix d = new Matrix(2, 1);
             Matrix h = new Matrix(2, 1);
+            Matrix B = null;
             for (int i = 0; i < gps.RowCount; i++)
             {
                 var gp = gps.Row(i);
                 Vector N;
-                Matrix B;
+              
                 double j;
-                shape_function(coords, gp, out N, out B, out j);
+                shape_function(coords, gp, out N, ref B, out j);
 
                 //# determine x and y position at Gauss point
                 var Nx = N * coords.Row(0);
@@ -478,12 +499,13 @@ namespace CrossSection
         /// <param name="B">the derivative of the shape functions in the j-th global direction* B(i, j)* [2 x 6]</param>
         /// <param name="j">the determinant of the Jacobian matrix *j*</param>
         private void shape_function(Matrix coords, Vector gauss_point,
-            out Vector N, out Matrix B, out double j)
+            out Vector N, ref Matrix B, out double j)
         {
             // location of isoparametric co-ordinates for each Gauss point
             var eta = gauss_point[1];
             var xi = gauss_point[2];
             var zeta = gauss_point[3];
+          
 
             N = new Vector(new[]
                         {
@@ -502,9 +524,10 @@ namespace CrossSection
                                                       {0, 4 * xi - 1, 0, 4 * eta, 4 * zeta, 0},
                                                       {0, 0, 4 * zeta - 1, 0, 4 * xi, 4 * eta}
                                                   });
+            var B_iso_Transpose = B_iso.Transpose;
 
             var J_upper = new Vector(new[] { 1.0, 1, 1 });
-            var J_lower = coords * B_iso.Transpose;
+            var J_lower = coords * B_iso_Transpose;
 
             var rows = new double[3][];
             rows[0] = J_upper.ToArray();
@@ -517,13 +540,16 @@ namespace CrossSection
 
             //calculate the jacobian
             j = 0.5 * J.Determinant;
-            B = new Matrix(2, 6);
+
+             B = B == null ? new Matrix(2, 6) : B.Clear();
+
+
             if (j != 0)
             {
                 //#if the area of the element is not zero
                 //# cacluate the P matrix
 
-                Matrix tmp = new Matrix(new double[,]
+               Matrix  tmp = new Matrix(new double[,]
                                                     {
                                                         {0, 0},
                                                         {1, 0},
@@ -532,7 +558,9 @@ namespace CrossSection
                 var P = J.Inverse * tmp;
 
                 //# calculate the B matrix in terms of cartesian co-ordinates
-                B = (B_iso.Transpose * P).Transpose;
+                B = (B_iso_Transpose * P).Transpose;
+
+               // MatrixCache.Dispose(tmp, P);
             }
 
 

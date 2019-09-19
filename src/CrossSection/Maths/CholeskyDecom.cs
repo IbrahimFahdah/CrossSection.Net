@@ -38,7 +38,7 @@ namespace McritTorEngine.MathFun
         #region Class variables
 
         /// <summary>Array for internal storage of decomposition.</summary>
-        private double[,] L;
+        public double[,] L;
 
         /// <summary>Row and column dimension (square matrix).</summary>
         private int n
@@ -66,14 +66,24 @@ namespace McritTorEngine.MathFun
             {
                 for (j = i; j < n; j++)
                 {
-                    for (sum = L[i, j], k = i - 1; k >= 0; k--) sum -= L[i, k] * L[j, k];
+                    for (sum = L[i, j], k = i - 1; k >= 0; k--)
+                    {
+                        sum -= L[i, k] * L[j, k];
+                    }
+
                     if (i == j)
                     {
                         if (sum <= 0.0) //A, with rounding errors, is not positive-definite.
+                        {
                             throw new System.SystemException("Cholesky failed");
+                        }
+
                         L[i, i] = System.Math.Sqrt(sum);
                     }
-                    else L[j, i] = sum / L[i, i];
+                    else
+                    {
+                        L[j, i] = sum / L[i, i];
+                    }
                 }
             }
 

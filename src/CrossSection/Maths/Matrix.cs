@@ -37,7 +37,7 @@ namespace CrossSection.Triangulation
     public class Matrix 
     {
         private Matrix<double> _m;
-
+        public static int count;
         public Matrix(Matrix<double> m)
         {
             _m = m;
@@ -46,16 +46,17 @@ namespace CrossSection.Triangulation
         public Matrix(int rows, int columns) 
         {
             _m = Matrix<double>.Build.Dense(rows, columns);
+            count++;
         }
 
         public Matrix(double[,] array) 
         {
-            _m = Matrix<double>.Build.DenseOfArray(array);
+            _m = Matrix<double>.Build.DenseOfArray(array); count++;
         }
 
         public Matrix(double[][] array)
         {
-            _m = Matrix<double>.Build.DenseOfRowArrays(array);
+            _m = Matrix<double>.Build.DenseOfRowArrays(array); count++;
         }
 
         public double this[int row, int column]
@@ -65,6 +66,13 @@ namespace CrossSection.Triangulation
         }
 
         public int RowCount { get { return _m.RowCount; } }
+        public int ColumnCount { get { return _m.ColumnCount; } }
+
+        public Matrix Clear()
+        {
+            _m.Clear();
+            return this;
+        }
 
         public Vector Row(int index)
         {
@@ -89,6 +97,17 @@ namespace CrossSection.Triangulation
         public double[,] ToArray()
         {
             return _m.ToArray ();
+        }
+
+        public void Append(Matrix source)
+        {
+            for (int i = 0; i < RowCount; i++)
+            {
+                for (int j = 0; j < ColumnCount; j++)
+                {
+                    _m[i, j] += source[i, j];
+                }
+            }
         }
 
         public Vector Column(int index)

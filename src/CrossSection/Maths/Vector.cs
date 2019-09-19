@@ -59,10 +59,21 @@ namespace CrossSection.Triangulation
         {
             return _v.ToArray();
         }
-
+        public void Clear()
+        {
+            _v.Clear();
+        }
         public Matrix ToRowMatrix()
         {
             return new Matrix(_v.ToRowMatrix());
+        }
+
+        public void Append(Vector source)
+        {
+            for (int i = 0; i < Count ; i++)
+            {
+                _v[i] += source[i];
+            }
         }
 
         public Matrix ToColumnMatrix()
