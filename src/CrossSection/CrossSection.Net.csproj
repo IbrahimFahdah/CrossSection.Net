@@ -10,6 +10,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Maths\alglib\**" />
+    <EmbeddedResource Remove="Maths\alglib\**" />
+    <None Remove="Maths\alglib\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Remove="DataModel\SectionPart.cs" />
   </ItemGroup>
 

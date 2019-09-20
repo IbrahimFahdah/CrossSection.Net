@@ -30,7 +30,7 @@
 using System;
 
 
-namespace CrossSection.Triangulation
+namespace CrossSection.Maths
 {
     /// <summary>
     /// Algorithm by Brent, Van Wijngaarden, Dekker et al.

@@ -25,27 +25,20 @@
 using System;
 using System.Collections.Generic;
 
-namespace CrossSection.Triangulation
+namespace CrossSection.Maths
 {
+    /// <summary>
+    /// A helper class to create common shapes.
+    /// </summary>
     public class ShapeGeneratorHelper
     {
 
-        public List<Point2D> CreateCircle(double r, int n)
+        public List<Point2D> CreateCircle( double r, int n)
         {
-            return CreateCircle(0.0, 0.0, r, n);
-        }
-
-        public List<Point2D> CreateCircle(double x, double y, double r, int n)
-        {
-            return CreateEllipse(0.0, 0.0, r, 1.0, 1.0, n);
+            return CreateEllipse(r, 1.0, 1.0, n);
         }
 
         public List<Point2D> CreateEllipse(double r, double a, double b, int n)
-        {
-            return CreateEllipse(0.0, 0.0, r, a, b, n);
-        }
-
-        public List<Point2D> CreateEllipse(double x, double y, double r, double a, double b, int n)
         {
             var contour = new List<Point2D>(n);
 
@@ -53,13 +46,11 @@ namespace CrossSection.Triangulation
 
             for (int i = 0; i < n; i++)
             {
-                contour.Add(new Point2D(x + a * r * Math.Cos(i * dphi), y + b * r * Math.Sin(i * dphi)));
+                contour.Add(new Point2D(a * r * Math.Cos(i * dphi), b * r * Math.Sin(i * dphi)));
             }
 
             return contour;
         }
-
-
 
         /// <summary>
         /// Constructs a rectangular section with the bottom left corner at the  origin* (0, 0)*, with depth *d* and width* b*.
@@ -78,8 +69,6 @@ namespace CrossSection.Triangulation
             return contour;
         }
 
-        #region Chs
-
         /// <summary>
         /// Constructs a circular hollow section centered at the origin *(0, 0)*
         /// </summary>
@@ -91,13 +80,9 @@ namespace CrossSection.Triangulation
         {
             var outer = CreateCircle(d / 2, n);
             var inner = CreateCircle(d / 2 - t, n);
-
-
             return (outer, inner);
         }
-        #endregion
-
-        #region RHS
+       
         /// <summary>
         /// Constructs a rectangular hollow section centered at *(b/2, d/2)*
         /// </summary>
@@ -133,10 +118,7 @@ namespace CrossSection.Triangulation
 
             return (outer, inner);
         }
-        #endregion
-
-        #region Ehs
-
+      
         /// <summary>
         /// "Constructs an elliptical hollow section centered at the origin *(0, 0)*, 
         /// with outer vertical diameter *d_y*, outer horizontal diameter* d_x*, and
@@ -149,13 +131,13 @@ namespace CrossSection.Triangulation
         /// <returns></returns>
         public (List<Point2D> outer, List<Point2D> inner) CreateEhsShape(double d_x, double d_y, double t, int n)
         {
-            var outer = CreateEllipse(0, 0, 1, d_x / 2.0, d_y / 2.0, n);
-            var inner = CreateEllipse(0, 0, 1, (d_x) / 2.0 - t, (d_y) / 2.0 - t, n);
+            var outer = CreateEllipse(1, d_x / 2.0, d_y / 2.0, n);
+            var inner = CreateEllipse(1, (d_x) / 2.0 - t, (d_y) / 2.0 - t, n);
 
 
             return (outer, inner);
         }
-        #endregion
+
 
 
         /// <summary>
@@ -170,8 +152,7 @@ namespace CrossSection.Triangulation
         /// <param name="r">Root radius of the Tee section</param>
         /// <param name="n_r">Number of points discretising the root radius</param>
         /// <returns></returns>
-        public List<Point2D> TeeSection(double d, double b, double t_f,
-     double t_w, double r, int n_r)
+        public List<Point2D> TeeSection(double d, double b, double t_f, double t_w, double r, int n_r)
         {
             var contour = new List<Point2D>();
             //# add first two points
@@ -197,7 +178,6 @@ namespace CrossSection.Triangulation
         }
 
 
-        #region MonoISection
         public List<Point2D> CreateMonoISection(double ht, double bt, double tft, double twt, double rt,
              double hb, double bb, double tfb, double twb, double rb,
              int n_r)
@@ -255,9 +235,6 @@ namespace CrossSection.Triangulation
 
             return contour;
         }
-        #endregion
-
-        #region Cruciform
 
         /// <summary>
         /// 
@@ -308,9 +285,7 @@ namespace CrossSection.Triangulation
             return self;
 
         }
-        #endregion
-
-
+  
 
         /// <summary>
         /// Constructs an angle section with the bottom left corner at the origin
@@ -537,6 +512,7 @@ namespace CrossSection.Triangulation
         /// <returns></returns>
         public List<Point2D> CreatePolygonShape(double d, double t, int n_sides, double r_in = 0, int n_r = 1, double rot = 0)
         {
+            //todo
             return null;
         }
 

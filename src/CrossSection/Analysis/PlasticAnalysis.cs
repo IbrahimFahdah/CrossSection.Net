@@ -25,6 +25,7 @@
 using System;
 using System.Linq;
 using CrossSection.DataModel;
+using CrossSection.Maths;
 using CrossSection.Triangulation;
 using TriangleNet;
 
@@ -241,25 +242,13 @@ namespace CrossSection.Analysis
             var qx = (top: 0.0, bot: 0.0);
             var qy = (top: 0.0, bot: 0.0);
 
-
+            Matrix coords = null;
             foreach (var item in mesh.Triangles)
             {
                 var contour = sec.Contours.FirstOrDefault(c => c.Material?.Id == item.Label);
+                 var mat = contour.Material;
 
-                var mat = contour.Material;
-                var x0 = item.GetVertex(0).X;
-                var x1 = item.GetVertex(1).X;
-                var x2 = item.GetVertex(2).X;
-                var y0 = item.GetVertex(0).Y;
-                var y1 = item.GetVertex(1).Y;
-                var y2 = item.GetVertex(2).Y;
-                var (x3, y3, x4, y4, x5, y5) = item.GetMidVertex();
-
-                Matrix coords =new Matrix(new double[,]
-                                                       {
-                                                           {x0, x1, x2, x3, x4, x5},
-                                                           {y0, y1, y2, y3, y4, y5}
-                                                       });
+                item.GetTriCoords(ref coords);
 
                 var (f_el, ea_el, qx_el, qy_el, is_above) =
                     _fea.plastic_properties(mat, coords, u, p);

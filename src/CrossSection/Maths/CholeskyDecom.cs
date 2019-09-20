@@ -23,34 +23,19 @@
 //</copyright>
 
 using System;
-using CrossSection.Triangulation;
 
 
-namespace McritTorEngine.MathFun
+namespace CrossSection.Maths
 {
+
     /// <summary>Cholesky Decomposition.</summary>
     /// <remarks>
     /// For a symmetric, positive definite matrix A, the Cholesky decomposition
     /// is an lower triangular matrix L so that A = L*L'.
     /// </remarks>
-    public class CholeskyDecom
+    public class CholeskyDecom: CholeskyDecomBase
     {
-        #region Class variables
 
-        /// <summary>Array for internal storage of decomposition.</summary>
-        public double[,] L;
-
-        /// <summary>Row and column dimension (square matrix).</summary>
-        private int n
-        {
-            get { return L.GetLength(0); }
-        }
-
-        #endregion 
-
-        public CholeskyDecom()
-        {
-        }
         /// <summary>Cholesky algorithm for symmetric and positive definite matrix.</summary>
         /// <param name="Arg">Square, symmetric matrix.</param>
         /// <returns>Structure to access L and isspd flag.</returns>
@@ -93,53 +78,5 @@ namespace McritTorEngine.MathFun
 
         }
 
-
-        #region Public Methods
-
-        /// <summary>Return triangular factor.</summary>
-        /// <returns>L</returns>
-        public Matrix GetL()
-        {
-            return new Matrix(L);
-        }
-
-        /// <summary>Solve A*X = B</summary>
-        /// <param name="B">  A Matrix with as many rows as A and any number of columns.</param>
-        /// <returns>X so that L*L'*X = B</returns>
-        /// <exception cref="System.ArgumentException">Matrix row dimensions must agree.</exception>
-        /// <exception cref="System.SystemException">Matrix is not symmetric positive definite.</exception>
-        public Vector Solve(Vector B)
-        {
-            if (B.Count != n)
-            {
-                throw new ArgumentException("Matrix row dimensions must agree.");
-            }
-
-            // Copy right hand side.
-            double[] X = B.ToArray();
-
-            double sum;
-            int kk;
-            for (int i = 0; i < n; i++)
-            {
-                sum = B[i];
-                for (kk = i - 1; kk >= 0; kk--)
-                    sum -= L[i, kk] * X[kk];
-
-                X[i] = sum / L[i, i];
-            }
-
-            for (int i = n - 1; i >= 0; i--)
-            {
-                sum = X[i];
-                for (kk = i + 1; kk < n; kk++)
-                    sum -= L[kk, i] * X[kk];
-
-                X[i] = sum / L[i, i];
-            }
-
-            return new Vector(X);
-        }
-        #endregion //  Public Methods
     }
 }

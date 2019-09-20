@@ -27,6 +27,7 @@ using CrossSection;
 using CrossSection.Analysis;
 using CrossSection.DataModel;
 using CrossSection.IO;
+using CrossSection.Maths;
 using CrossSection.Triangulation;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json;
@@ -287,7 +288,6 @@ namespace SectionProTests
             _solver.Solve(sec);
             Compare(nameof(CustomSec2_Test), sec);
 
-            var dd = Matrix.count;
         }
 
 
@@ -343,7 +343,11 @@ namespace SectionProTests
 
                     if (!JToken.DeepEquals(expctedProp.Value, actualProperty.Value))
                     {
-                        Assert.AreEqual((double)expctedProp.Value, (double)actualProperty.Value, 0.00001, "{0} has changed.", actualProperty.Key);
+                        var isDouble=double.TryParse(actualProperty.Value.ToString(), out var expectedVal);
+                        if (isDouble)
+                        {
+                            Assert.AreEqual((double)expctedProp.Value, (double)actualProperty.Value, 0.00001, "{0} has changed.", actualProperty.Key);
+                        }
                     }
                 }
             }

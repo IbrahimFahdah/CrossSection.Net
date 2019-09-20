@@ -24,7 +24,7 @@
 
 using MathNet.Numerics.LinearAlgebra;
 
-namespace CrossSection.Triangulation
+namespace CrossSection.Maths
 {
     /// <summary>
     /// Vector operations wrapper
@@ -38,12 +38,12 @@ namespace CrossSection.Triangulation
             _v = Vector<double>.Build.Dense(n);
         }
 
-        public Vector(Vector<double> v) 
+        public Vector(Vector<double> v)
         {
             _v = v;
         }
 
-        public Vector(double[] array) 
+        public Vector(double[] array)
         {
             _v = Vector<double>.Build.DenseOfArray(array);
         }
@@ -59,9 +59,10 @@ namespace CrossSection.Triangulation
         {
             return _v.ToArray();
         }
-        public void Clear()
+        public Vector Clear()
         {
             _v.Clear();
+            return this;
         }
         public Matrix ToRowMatrix()
         {
@@ -70,7 +71,7 @@ namespace CrossSection.Triangulation
 
         public void Append(Vector source)
         {
-            for (int i = 0; i < Count ; i++)
+            for (int i = 0; i < Count; i++)
             {
                 _v[i] += source[i];
             }

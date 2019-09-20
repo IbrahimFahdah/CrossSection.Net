@@ -29,12 +29,12 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace CrossSection.Triangulation
+namespace CrossSection.Maths
 {
     /// <summary>
     /// Matrix operation wrapper
     /// </summary>
-    public class Matrix 
+    public class Matrix
     {
         private Matrix<double> _m;
         public static int count;
@@ -43,13 +43,13 @@ namespace CrossSection.Triangulation
             _m = m;
         }
 
-        public Matrix(int rows, int columns) 
+        public Matrix(int rows, int columns)
         {
             _m = Matrix<double>.Build.Dense(rows, columns);
             count++;
         }
 
-        public Matrix(double[,] array) 
+        public Matrix(double[,] array)
         {
             _m = Matrix<double>.Build.DenseOfArray(array); count++;
         }
@@ -96,7 +96,7 @@ namespace CrossSection.Triangulation
 
         public double[,] ToArray()
         {
-            return _m.ToArray ();
+            return _m.ToArray();
         }
 
         public void Append(Matrix source)
@@ -112,7 +112,7 @@ namespace CrossSection.Triangulation
 
         public Vector Column(int index)
         {
-            return new Vector( _m.Column(index));
+            return new Vector(_m.Column(index));
         }
 
         public static Matrix operator *(double leftSide, Matrix rightSide)
@@ -132,7 +132,7 @@ namespace CrossSection.Triangulation
 
         public static Vector operator *(Matrix leftSide, Vector rightSide)
         {
-            return new Vector ( leftSide._m.Multiply(rightSide._v));
+            return new Vector(leftSide._m.Multiply(rightSide._v));
         }
 
         public static Vector operator *(Vector leftSide, Matrix rightSide)
