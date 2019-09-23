@@ -14,7 +14,7 @@ namespace ConsoleApp1
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("using a");
+            Console.WriteLine("Starting...");
 
 
             Stopwatch sw = new Stopwatch();

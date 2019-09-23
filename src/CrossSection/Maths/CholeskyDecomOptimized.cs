@@ -23,6 +23,7 @@
 //</copyright>
 
 using MathNet.Numerics.LinearAlgebra;
+using MathNet.Numerics.LinearAlgebra.Storage;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -39,7 +40,7 @@ namespace CrossSection.Maths
     {
 
         /// <summary>Cholesky algorithm for symmetric and positive definite matrix.
-        /// Optimized to improve performance. This is mainly done by skipping the zeros values since the matrix is a sparse matrix.</summary>
+        /// Optimized to improve performance. This is mainly done by skipping the zeros values since the matrix is a sparse matrix, and also rearranging some bits.</summary>
         /// <param name="Arg">Square, symmetric matrix.</param>
         /// <returns>Structure to access L and isspd flag.</returns>
         public CholeskyDecomOptimized(Matrix Arg)
@@ -49,7 +50,7 @@ namespace CrossSection.Maths
             L = Arg.ToArray();
 
             var myMatrix = Matrix<double>.Build.SparseOfArray(L);
-            List<Vector<double>> sparseRows = new List<Vector<double>>(myMatrix.EnumerateRows());
+            List<SparseVectorStorage<double>> sparseRows = myMatrix.EnumerateRows().Select(s => s.Storage).Cast<SparseVectorStorage<double>>().ToList();
 
             //Stopwatch sw = new Stopwatch();
             //sw.Start();
@@ -58,27 +59,35 @@ namespace CrossSection.Maths
             var sum2 = 0.0;
             var lastNonZero = -1;
             var firstNonZero = -1;
+            var k_ind = 0;
             for (i = 0; i < n; i++)
             {
                 double[] Rik = new double[i];
                 var sum = 0.0;
                 lastNonZero = -1;
                 firstNonZero = -1;
-                foreach (var item in sparseRows[i].EnumerateIndexed(Zeros.AllowSkip).Where(x => x.Item1 <= i - 1))
+
+                var Vi = sparseRows[i];
+                for (var k = 0; k < Vi.ValueCount; k++)
                 {
-                    var Lik = item.Item2;
+                    k_ind = Vi.Indices[k];
+                    if (k_ind > i - 1)
+                    {
+                        break;
+                    }
+
+                    var Lik = Vi.Values[k];
                     sum -= Lik * Lik;
 
-                    Rik[item.Item1] = Lik;
+                    Rik[k_ind] = Lik;
                     if (Lik != 0)
                     {
-                        lastNonZero = item.Item1;
-                        if (firstNonZero ==-1)
+                        lastNonZero = k_ind;
+                        if (firstNonZero == -1)
                         {
                             firstNonZero = lastNonZero;
                         }
                     }
-                   
                 }
 
                 ref var Lii = ref L[i, i];
@@ -87,11 +96,24 @@ namespace CrossSection.Maths
                 for (j = i + 1; j < n; j++)
                 {
                     sum2 = L[i, j];
+
                     if (lastNonZero != -1)
                     {
-                        foreach (var item in sparseRows[j].EnumerateIndexed(Zeros.AllowSkip).Where(x => x.Item1>= firstNonZero && x.Item1 <= lastNonZero))
+                        var Vj = sparseRows[j];
+                        for (var k = 0; k < Vj.ValueCount; k++)
                         {
-                            sum2 -= Rik[item.Item1] * item.Item2;
+                            if (Vj.Indices[k] < firstNonZero)
+                            {
+                                continue;
+                            }
+                            if (Vj.Indices[k] > lastNonZero)
+                            {
+                                break;
+                            }
+
+                           // (k_ind >= firstNonZero && k_ind <= lastNonZero)
+                            sum2 -= Rik[Vj.Indices[k]] * Vj.Values[k];
+                          
                         }
                     }
 
@@ -99,8 +121,9 @@ namespace CrossSection.Maths
                 }
             }
 
+
             //sw.Stop();
-            //Console.WriteLine("Elapsed={0}", sw.Elapsed);
+            //Console.WriteLine("Elapsed (Cholesky)={0}", sw.Elapsed);
 
             //zero the top part so we have only the lower part
             for (i = 0; i < n; i++)

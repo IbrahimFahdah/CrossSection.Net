@@ -7,7 +7,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CrossSection.Net", "src\Cro
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SectionProTests", "tests\SectionProTests\SectionProTests.csproj", "{2EC06FB9-6FFF-43C6-BB1C-8EC5FD816249}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsoleApp1", "ConsoleApp1\ConsoleApp1.csproj", "{5099769C-4B6F-400D-A25C-930855C09421}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{4AB195C3-E0CC-41B5-B5AB-02D38A03B012}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsoleApp1", "tests\ConsoleApp1\ConsoleApp1.csproj", "{5099769C-4B6F-400D-A25C-930855C09421}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -44,6 +46,10 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{2EC06FB9-6FFF-43C6-BB1C-8EC5FD816249} = {4AB195C3-E0CC-41B5-B5AB-02D38A03B012}
+		{5099769C-4B6F-400D-A25C-930855C09421} = {4AB195C3-E0CC-41B5-B5AB-02D38A03B012}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {CF7C0E88-01EA-4505-BA70-97FA046C73F1}

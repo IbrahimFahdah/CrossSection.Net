@@ -50,7 +50,7 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\src\CrossSection\CrossSection.Net.csproj">
+    <ProjectReference Include="..\..\src\CrossSection\CrossSection.Net.csproj">
       <Project>{F7ABF67F-E93E-4BAD-92A2-9E666329D76F}</Project>
       <Name>CrossSection.Net</Name>
     </ProjectReference>
