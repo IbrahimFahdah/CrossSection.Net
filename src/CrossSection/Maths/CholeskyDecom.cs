@@ -22,12 +22,6 @@
 //SOFTWARE.
 //</copyright>
 
-using MathNet.Numerics.LinearAlgebra;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-
 namespace CrossSection.Maths
 {
 
@@ -38,69 +32,45 @@ namespace CrossSection.Maths
     /// </remarks>
     public class CholeskyDecom : CholeskyDecomBase
     {
-
-        /// <summary>Cholesky algorithm for symmetric and positive definite matrix.</summary>
-        /// <param name="Arg">Square, symmetric matrix.</param>
-        /// <returns>Structure to access L and isspd flag.</returns>
         public CholeskyDecom(Matrix Arg)
         {
-
             // Initialize.
             L = Arg.ToArray();
 
-            var myMatrix = Matrix<double>.Build.SparseOfArray(L);
-            List<Vector<double>> sparseRows = new List<Vector<double>>(myMatrix.EnumerateRows());
-
             int i, j, k;
-            var sum2 = 0.0;
+
+            double sum;
             for (i = 0; i < n; i++)
             {
-                double[] Ri = new double[i];
-                var sum = 0.0;
-
-                foreach (var item in sparseRows[i].EnumerateIndexed(Zeros.AllowSkip).Where(x => x.Item1 <= i - 1))
+                for (j = i; j < n; j++)
                 {
-                    var Lik = item.Item2;
-                    sum -= Lik * Lik;
-
-                    Ri[item.Item1] = Lik;
-                }
-
-                ref var Lii = ref L[i, i];
-
-                Lii = Math.Sqrt(Lii + sum);
-                //\========
-
-
-                for (j = i + 1; j < n; j++)
-                {
-                    sum2 = L[i, j];
-
-                    if (sum != 0)
+                    for (sum = L[i, j], k = i - 1; k >= 0; k--)
                     {
-                        foreach (var item in sparseRows[j].EnumerateIndexed(Zeros.AllowSkip).Where(x => x.Item1 <= i - 1))
-                        {
-                            sum2 -= Ri[item.Item1] * item.Item2;
-                        }
+                        sum -= L[i, k] * L[j, k];
                     }
 
-                    sparseRows[j][i] = sum2 / Lii;
-                    L[j, i] = sparseRows[j][i];
+                    if (i == j)
+                    {
+                        if (sum <= 0.0) //A, with rounding errors, is not positive-definite.
+                        {
+                            throw new System.SystemException("Cholesky failed");
+                        }
 
+                        L[i, i] = System.Math.Sqrt(sum);
+                    }
+                    else
+                    {
+                        L[j, i] = sum / L[i, i];
+                    }
                 }
-
-
             }
 
-            //zero the top part so we have only the lower part
             for (i = 0; i < n; i++)
-            {
                 for (j = 0; j < i; j++)
-                {
                     L[j, i] = 0.0;
-                }
-            }
+
         }
 
+     
     }
 }

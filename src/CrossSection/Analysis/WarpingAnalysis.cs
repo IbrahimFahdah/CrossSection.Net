@@ -81,7 +81,7 @@ namespace CrossSection.Analysis
             (var K, var f_torsion) = assemble_torsion(sec, _mesh, nodes);
 
             //solve Cholesky decomposition. 
-            CholeskyDecomBase Cholesky = new CholeskyDecom (K);
+            CholeskyDecomBase Cholesky = new CholeskyDecomOptimized (K);
 
             //# solve for warping function
             var omega = Cholesky.Solve(f_torsion);
