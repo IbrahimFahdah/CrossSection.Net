@@ -248,10 +248,8 @@ namespace CrossSection.Analysis
                 var contour = sec.Contours.FirstOrDefault(c => c.Material?.Id == item.Label);
                  var mat = contour.Material;
 
-                item.GetTriCoords(ref coords);
-
                 var (f_el, ea_el, qx_el, qy_el, is_above) =
-                    _fea.plastic_properties(mat, coords, u, p);
+                    _fea.plastic_properties(mat, item.GetTriCoords(), u, p);
 
                 //# assign force and area properties to the top or bottom segments
                 if (is_above)

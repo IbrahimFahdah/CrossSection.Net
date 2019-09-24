@@ -77,6 +77,48 @@ namespace CrossSection.Triangulation
           
         }
 
+        public static double[][] GetTriCoords(this Triangle item)
+        {
+            var coords = new double[2][];
+            coords[0] = new double[6];
+            coords[1] = new double[6];
+
+            //Node 3 between 0,1
+            //Node 4 between 1,2
+            //Node 5 between 2,0
+
+            var x0 = item.GetVertex(0).X;
+            var x1 = item.GetVertex(1).X;
+            var x2 = item.GetVertex(2).X;
+            var y0 = item.GetVertex(0).Y;
+            var y1 = item.GetVertex(1).Y;
+            var y2 = item.GetVertex(2).Y;
+
+            var x3 = (x0 + x1) * 0.5;
+            var x4 = (x1 + x2) * 0.5;
+            var x5 = (x2 + x0) * 0.5;
+            var y3 = (y0 + y1) * 0.5;
+            var y4 = (y1 + y2) * 0.5;
+            var y5 = (y2 + y0) * 0.5;
+
+
+            coords[0][ 0] = x0;
+            coords[0][ 1] = x1;
+            coords[0][ 2] = x2;
+            coords[0][ 3] = x3;
+            coords[0][ 4] = x4;
+            coords[0][ 5] = x5;
+               
+            coords[1][ 0] = y0;
+            coords[1][ 1] = y1;
+            coords[1][ 2] = y2;
+            coords[1][ 3] = y3;
+            coords[1][ 4] = y4;
+            coords[1][ 5] = y5;
+
+            return coords;
+        }
+
 
         public static (double x3, double y3, double x4, double y4, double x5, double y5)
             GetMidVertex(this Triangle item)

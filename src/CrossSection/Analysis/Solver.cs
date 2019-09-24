@@ -69,7 +69,7 @@ namespace CrossSection.Analysis
 
                 item.GetTriCoords(ref coords);
 
-               var  ( area,  qx,  qy,  ixx,  iyy,  ixy) = _fea.geometric_properties(ref coords);
+               var  ( area,  qx,  qy,  ixx,  iyy,  ixy) = _fea.geometric_properties(item.GetTriCoords());
 
                 sec.Output.SectionProperties.Area += area;
                 sec.Output.SectionProperties.ea += area * e;
