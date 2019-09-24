@@ -33,10 +33,7 @@ namespace CrossSection.Maths
         /// </summary>
         public double[,] L;
 
-        protected int n
-        {
-            get { return L.GetLength(0); }
-        }
+       
 
         public Matrix GetL()
         {
@@ -51,6 +48,7 @@ namespace CrossSection.Maths
         /// <exception cref="System.SystemException">Matrix is not symmetric positive definite.</exception>
         public Vector Solve(Vector B)
         {
+            int n = L.GetLength(0);
             if (B.Count != n)
             {
                 throw new ArgumentException("Matrix row dimensions must agree.");

@@ -34,8 +34,11 @@ namespace CrossSection.Maths
     {
         public CholeskyDecom(Matrix Arg)
         {
+
             // Initialize.
             L = Arg.ToArray();
+
+            int n = L.GetLength(0);
 
             int i, j, k;
 

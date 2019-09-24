@@ -22,12 +22,8 @@
 //SOFTWARE.
 //</copyright>
 
-using MathNet.Numerics.LinearAlgebra;
-using MathNet.Numerics.LinearAlgebra.Storage;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 
 namespace CrossSection.Maths
 {
@@ -45,21 +41,18 @@ namespace CrossSection.Maths
         /// <returns>Structure to access L and isspd flag.</returns>
         public CholeskyDecomOptimized(Matrix Arg)
         {
-
-            // Initialize.
-            L = Arg.ToArray();
-
-            var myMatrix = Matrix<double>.Build.SparseOfArray(L);
-            List<SparseVectorStorage<double>> sparseRows = myMatrix.EnumerateRows().Select(s => s.Storage).Cast<SparseVectorStorage<double>>().ToList();
-
             //Stopwatch sw = new Stopwatch();
             //sw.Start();
 
-            int i, j;
+            CholeskySparseMatrix Rows = new CholeskySparseMatrix(Arg.ToArray());
+
             var sum2 = 0.0;
             var lastNonZero = -1;
             var firstNonZero = -1;
-            var k_ind = 0;
+            //var k_ind = 0;
+            int i, j;
+            int n = Arg.RowCount;
+
             for (i = 0; i < n; i++)
             {
                 double[] Rik = new double[i];
@@ -67,10 +60,10 @@ namespace CrossSection.Maths
                 lastNonZero = -1;
                 firstNonZero = -1;
 
-                var Vi = sparseRows[i];
+                var Vi = Rows[i];
                 for (var k = 0; k < Vi.ValueCount; k++)
                 {
-                    k_ind = Vi.Indices[k];
+                    ref var k_ind = ref Vi.Indices[k];
                     if (k_ind > i - 1)
                     {
                         break;
@@ -90,34 +83,33 @@ namespace CrossSection.Maths
                     }
                 }
 
-                ref var Lii = ref L[i, i];
-                Lii = Math.Sqrt(Lii + sum);
-
+                Vi[i] = Math.Sqrt(Vi[i] + sum);
+                var vii = Vi[i];
                 for (j = i + 1; j < n; j++)
                 {
-                    sum2 = L[i, j];
-
+                    sum2 = Vi[j];
+                    var Vj = Rows[j];
                     if (lastNonZero != -1)
                     {
-                        var Vj = sparseRows[j];
                         for (var k = 0; k < Vj.ValueCount; k++)
                         {
-                            if (Vj.Indices[k] < firstNonZero)
+                            ref var k_ind = ref Vj.Indices[k];
+                            if (k_ind < firstNonZero)
                             {
                                 continue;
                             }
-                            if (Vj.Indices[k] > lastNonZero)
+                            if (k_ind > lastNonZero)
                             {
                                 break;
                             }
 
-                           // (k_ind >= firstNonZero && k_ind <= lastNonZero)
-                            sum2 -= Rik[Vj.Indices[k]] * Vj.Values[k];
-                          
+                            // (k_ind >= firstNonZero && k_ind <= lastNonZero)
+                            sum2 -= Rik[k_ind] * Vj.Values[k];
+
                         }
                     }
 
-                    L[j, i] = sparseRows[j][i] = sum2 / Lii;
+                    Vj[i] = sum2 / vii;
                 }
             }
 
@@ -125,15 +117,17 @@ namespace CrossSection.Maths
             //sw.Stop();
             //Console.WriteLine("Elapsed (Cholesky)={0}", sw.Elapsed);
 
-            //zero the top part so we have only the lower part
+            L = new double[n, n];
             for (i = 0; i < n; i++)
             {
-                for (j = 0; j < i; j++)
+                for (j = 0; j <= i; j++)
                 {
-                    L[j, i] = 0.0;
+                    L[i, j] = Rows[i, j];
                 }
             }
+
         }
 
     }
+
 }
