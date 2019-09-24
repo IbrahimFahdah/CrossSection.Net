@@ -36,19 +36,43 @@ namespace CrossSection.Analysis
 {
     public class WarpingAnalysis
     {
-        class TriNode
+        internal class TriNode
         {
             public int Index { get; set; }
             public int VertexId1 { get; set; }
             public int VertexId2 { get; set; }
 
-            public TriNode(int index, int id1, int id2)
+            internal TriNode(int index, int id1, int id2)
             {
                 Index = index;
                 VertexId1 = id1;
                 VertexId2 = id2;
             }
 
+        }
+
+        internal class ExtendedTri
+        {
+            internal Triangle _tri;
+            internal TriNode[] _nodes;
+            internal ExtendedTri(Triangle tri, TriNode[] nodes)
+            {
+                _tri = tri;
+                _nodes = nodes;
+            }
+
+            public int Label => _tri.Label;
+
+            internal void TriangleData(ref Matrix coords, out int n0, out int n1, out int n2, out int n3, out int n4, out int n5)
+            {
+                _tri.GetTriCoords(ref coords);
+                n0 =  _nodes[0].Index;
+                n1 = _nodes[1].Index;
+                n2 = _nodes[2].Index;
+                n3 = _nodes[3].Index;
+                n4 = _nodes[4].Index;
+                n5 = _nodes[5].Index;
+            }
         }
 
         fea _fea = new fea();
@@ -74,11 +98,11 @@ namespace CrossSection.Analysis
 
             var maxId = _mesh.Vertices.Max(x => x.ID);
 
-            List<TriNode> nodes = new List<TriNode>();
-            BuildTriNodesList(_mesh, nodes);
+            List<ExtendedTri> Tris = BuildTriNodesList(_mesh, out var nodeCount);
+
 
             //  # assemble stiffness matrix and load vector for warping function
-            (var K, var f_torsion) = assemble_torsion(sec, _mesh, nodes);
+            (var K, var f_torsion) = assemble_torsion(sec, _mesh, Tris, nodeCount);
 
             //solve Cholesky decomposition. 
             CholeskyDecomBase Cholesky = new CholeskyDecomOptimized (K);
@@ -92,16 +116,16 @@ namespace CrossSection.Analysis
             sec.Output.SectionProperties.j = sec.Output.SectionProperties.ixx_c + sec.Output.SectionProperties.iyy_c - omega * K * omega;
 
             //======================# assemble shear function load vectors
-            Vector f_psi = new Vector(nodes.Count);
-            Vector f_phi = new Vector(nodes.Count);
+            Vector f_psi = new Vector(nodeCount);
+            Vector f_phi = new Vector(nodeCount);
 
             int n0, n1, n2, n3, n4, n5;
             var coords = new Matrix(2, 6);
-            foreach (var item in _mesh.Triangles)
+            foreach (var item in Tris)
             {
 
                 var mat = sec.Contours.First(c => c.Material?.Id == item.Label).Material;
-                TriangleData(item, sec, nodes, ref coords, out n0, out n1, out n2, out n3, out n4, out n5);
+                item.TriangleData(ref coords, out n0, out n1, out n2, out n3, out n4, out n5);
 
                 var ixx_c = sec.Output.SectionProperties.ixx_c;
                 var iyy_c = sec.Output.SectionProperties.iyy_c;
@@ -133,10 +157,10 @@ namespace CrossSection.Analysis
             var i_xomega = 0.0;
             var i_yomega = 0.0;
 
-            foreach (var item in _mesh.Triangles)
+            foreach (var item in Tris)
             {
                 var mat = sec.Contours.First(c => c.Material?.Id == item.Label).Material;
-                TriangleData(item, sec, nodes, ref coords, out n0, out n1, out n2, out n3, out n4, out n5);
+                item.TriangleData( ref coords, out n0, out n1, out n2, out n3, out n4, out n5);
 
                 var ixx_c = sec.Output.SectionProperties.ixx_c;
                 var iyy_c = sec.Output.SectionProperties.iyy_c;
@@ -209,10 +233,10 @@ namespace CrossSection.Analysis
             var kappa_xy = 0.0;
 
 
-            foreach (var item in _mesh.Triangles)
+            foreach (var item in Tris)
             {
                 var mat = sec.Contours.First(c => c.Material?.Id == item.Label).Material;
-                TriangleData(item, sec, nodes, ref coords, out n0, out n1, out n2, out n3, out n4, out n5);
+                item.TriangleData( ref coords, out n0, out n1, out n2, out n3, out n4, out n5);
 
                 var ixx_c = sec.Output.SectionProperties.ixx_c;
                 var iyy_c = sec.Output.SectionProperties.iyy_c;
@@ -270,10 +294,10 @@ namespace CrossSection.Analysis
             var int_y = 0.0;
             var int_11 = 0.0;
             var int_22 = 0.0;
-            foreach (var item in _mesh.Triangles)
+            foreach (var item in Tris)
             {
                 var mat = sec.Contours.First(c => c.Material?.Id == item.Label).Material;
-                TriangleData(item, sec, nodes, ref coords, out n0, out n1, out n2, out n3, out n4, out n5);
+                item.TriangleData(ref coords, out n0, out n1, out n2, out n3, out n4, out n5);
 
 
                 var phi = sec.Output.SectionProperties.phi;
@@ -319,10 +343,10 @@ namespace CrossSection.Analysis
         }
 
 
-        private (Matrix K, Vector f_torsion) assemble_torsion(SectionDefinition sec, Mesh mesh, List<TriNode> nodes)
+        private (Matrix K, Vector f_torsion) assemble_torsion(SectionDefinition sec, Mesh mesh, List<ExtendedTri> Tris, int nodeCount)
         {
-            Vector ff = new Vector(nodes.Count);
-            Matrix kk = new Matrix(nodes.Count, nodes.Count);
+            Vector ff = new Vector(nodeCount);
+            Matrix kk = new Matrix(nodeCount, nodeCount);
 
             //# initialise stiffness matrix and load vector
             Matrix k_el = null;
@@ -330,11 +354,11 @@ namespace CrossSection.Analysis
             int n0, n1, n2, n3, n4, n5;
             var coords = new Matrix(2, 6);
 
-            foreach (var item in mesh.Triangles)
+            foreach (var item in Tris)
             {
                 var mat = sec.Contours.First(c => c.Material?.Id == item.Label).Material;
 
-                TriangleData(item, sec, nodes, ref coords, out n0, out n1, out n2, out n3, out n4, out n5);
+                item.TriangleData(ref coords, out n0, out n1, out n2, out n3, out n4, out n5);
 
                 // # calculate the element stiffness matrix and torsion load vector
                 _fea.torsion_properties(mat, coords, ref k_el, ref f_el);
@@ -361,31 +385,11 @@ namespace CrossSection.Analysis
 
         }
 
-        private void TriangleData(Triangle item, SectionDefinition sec, List<TriNode> nodes, ref Matrix coords, out int n0, out int n1, out int n2, out int n3, out int n4, out int n5)
+      
+        private List<ExtendedTri> BuildTriNodesList(Mesh mesh, out int nodeCount)
         {
-
-            var mat = sec.Contours.First(c => c.Material?.Id == item.Label).Material;
-
-            var e = mat.elastic_modulus;
-            var g = mat.shear_modulus;
-
-            Vertex v0 = item.GetVertex(0);
-            Vertex v1 = item.GetVertex(1);
-            Vertex v2 = item.GetVertex(2);
-
-            item.GetTriCoords(ref coords);
-
-            n0 = FindNode(nodes, v0.ID, v0.ID).Index;
-            n1 = FindNode(nodes, v1.ID, v1.ID).Index;
-            n2 = FindNode(nodes, v2.ID, v2.ID).Index;
-            n3 = FindNode(nodes, v0.ID, v1.ID).Index;
-            n4 = FindNode(nodes, v1.ID, v2.ID).Index;
-            n5 = FindNode(nodes, v0.ID, v2.ID).Index;
-        }
-
-        private static List<TriNode> BuildTriNodesList(Mesh mesh, List<TriNode> nodes)
-        {
-            // List<TriNode> nodes = new List<TriNode>();
+            List<ExtendedTri> tri = new List<ExtendedTri>();
+            List<TriNode> nodes = new List<TriNode>();
 
             int index = 0;
             foreach (var item in mesh.Triangles)
@@ -393,50 +397,60 @@ namespace CrossSection.Analysis
                 Vertex v0 = item.GetVertex(0);
                 Vertex v1 = item.GetVertex(1);
                 Vertex v2 = item.GetVertex(2);
-                if (!nodes.Any(n => v0.ID == n.VertexId1))
+
+                var n0 = nodes.FirstOrDefault(n => v0.ID == n.VertexId1);
+                if (n0 == null)
                 {
-                    nodes.Add(new TriNode(index++, v0.ID, v0.ID));
+                    n0 = new TriNode(index++, v0.ID, v0.ID);
+                    nodes.Add(n0);
                 }
-                if (!nodes.Any(n => v1.ID == n.VertexId1))
+
+                var n1 = nodes.FirstOrDefault(n => v1.ID == n.VertexId1); 
+                if (n1==null)
                 {
-                    nodes.Add(new TriNode(index++, v1.ID, v1.ID));
+                    n1 = new TriNode(index++, v1.ID, v1.ID);
+                    nodes.Add(n1);
                 }
-                if (!nodes.Any(n => v2.ID == n.VertexId1))
+
+                var n2 = nodes.FirstOrDefault(n => v2.ID == n.VertexId1);
+                if (n2==null)
                 {
-                    nodes.Add(new TriNode(index++, v2.ID, v2.ID));
+                    n2 = new TriNode(index++, v2.ID, v2.ID);
+                    nodes.Add(n2);
                 }
 
                 //n3
-                if (!nodes.Any(n => (n.VertexId1 == v0.ID && n.VertexId2 == v1.ID) || (n.VertexId1 == v1.ID && n.VertexId2 == v0.ID)))
+                var n3 = nodes.FirstOrDefault(n => (n.VertexId1 == v0.ID && n.VertexId2 == v1.ID) || (n.VertexId1 == v1.ID && n.VertexId2 == v0.ID));
+                if (n3==null)
                 {
-                    nodes.Add(new TriNode(index++, v0.ID, v1.ID));
+                    n3 = new TriNode(index++, v0.ID, v1.ID);
+                    nodes.Add(n3);
                 }
 
 
                 //n4
-                if (!nodes.Any(n => (n.VertexId1 == v1.ID && n.VertexId2 == v2.ID) || (n.VertexId1 == v2.ID && n.VertexId2 == v1.ID)))
+                var n4 = nodes.FirstOrDefault(n => (n.VertexId1 == v1.ID && n.VertexId2 == v2.ID) || (n.VertexId1 == v2.ID && n.VertexId2 == v1.ID));
+                if (n4==null)
                 {
-                    nodes.Add(new TriNode(index++, v1.ID, v2.ID));
+                    n4 = new TriNode(index++, v1.ID, v2.ID);
+                    nodes.Add(n4);
                 }
 
 
                 //n5
-                if (!nodes.Any(n => (n.VertexId1 == v2.ID && n.VertexId2 == v0.ID) || (n.VertexId1 == v0.ID && n.VertexId2 == v2.ID)))
+                var n5 = nodes.FirstOrDefault(n => (n.VertexId1 == v2.ID && n.VertexId2 == v0.ID) || (n.VertexId1 == v0.ID && n.VertexId2 == v2.ID));
+                if (n5 == null)
                 {
-                    nodes.Add(new TriNode(index++, v0.ID, v2.ID));
+                    n5 = new TriNode(index++, v0.ID, v2.ID);
+                    nodes.Add(n5);
                 }
 
+
+                tri.Add(new ExtendedTri(item, new[] { n0, n1, n2, n3, n4, n5 }));
             }
-            return nodes;
+            nodeCount = nodes.Count;
+            return tri;
         }
-
-
-        private static TriNode FindNode(List<TriNode> nodes, int id1, int id2)
-        {
-            return nodes.First(n => (n.VertexId1 == id1 && n.VertexId2 == id2) || (n.VertexId1 == id2 && n.VertexId2 == id1));
-        }
-
-
 
     }
 }
