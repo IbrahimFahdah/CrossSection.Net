@@ -84,6 +84,11 @@ namespace CrossSection.Maths
                     }
                 }
 
+                if (sum <= 0.0) //A, with rounding errors, is not positive-definite.
+                {
+                    throw new System.SystemException("Cholesky failed");
+                }
+
                 Vi[i] = Math.Sqrt(sum);
                 var vii = Vi[i];
                 for (j = i + 1; j < n; j++)

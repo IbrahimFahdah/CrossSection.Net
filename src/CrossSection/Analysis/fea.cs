@@ -158,11 +158,10 @@ namespace CrossSection
                 var B_Transpose = B.Transpose();
 
                 //# calculated modulus weighted stiffness matrix and load vector
-                k_el.Append(gp[0].MultiplyBy(B_Transpose.Dot(B)).MultiplyBy(j * mat.elastic_modulus));
-
+                k_el.Append(B_Transpose.Dot(B).Dot(gp[0] * j * mat.elastic_modulus));
                 Nxy[0] = Ny;
                 Nxy[1] = -Nx;
-                f_el.Append(gp[0].MultiplyBy(B_Transpose.Dot(Nxy)).MultiplyBy(j * mat.elastic_modulus));
+                f_el.Append(B_Transpose.Dot(Nxy).Dot(gp[0] * j * mat.elastic_modulus));
             }
         }
 
@@ -262,7 +261,7 @@ namespace CrossSection
                 var gp = gps.Row(i);
 
                 //shape_function(coords, gp, out N, ref B, out j);
-                Matrix B =new Matrix( tri.ShapeInfo[i].B);
+                Matrix B = new Matrix(tri.ShapeInfo[i].B);
                 double[] N = tri.ShapeInfo[i].N;
                 double j = tri.ShapeInfo[i].j;
 
@@ -315,7 +314,7 @@ namespace CrossSection
                 var gp = gps.Row(i);
 
                 //shape_function(coords, gp, out N, ref B, out j);
-                Matrix B =new Matrix( tri.ShapeInfo[i].B);
+                Matrix B = new Matrix(tri.ShapeInfo[i].B);
                 double[] N = tri.ShapeInfo[i].N;
                 double j = tri.ShapeInfo[i].j;
 
@@ -378,7 +377,7 @@ namespace CrossSection
                 var gp = gps.Row(i);
 
                 // shape_function(coords, gp, out N, ref B, out j);
-                Matrix B =new Matrix( tri.ShapeInfo[i].B);
+                Matrix B = new Matrix(tri.ShapeInfo[i].B);
                 double[] N = tri.ShapeInfo[i].N;
                 double j = tri.ShapeInfo[i].j;
 
