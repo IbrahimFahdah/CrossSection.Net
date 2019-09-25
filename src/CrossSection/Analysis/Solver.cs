@@ -25,7 +25,6 @@
 using System;
 using System.Linq;
 using CrossSection.DataModel;
-using CrossSection.Maths;
 using CrossSection.Triangulation;
 using TriangleNet;
 
@@ -60,14 +59,11 @@ namespace CrossSection.Analysis
 
         private void GeomAnalysis(SectionDefinition sec, Mesh mesh)
         {
-            Matrix coords = null;
             foreach (var item in mesh.Triangles)
             {
                 var mat = sec.Contours.First(c => c.Material?.Id == item.Label).Material;
                 var e = mat.elastic_modulus;
                 var g = mat.shear_modulus;
-
-                item.GetTriCoords(ref coords);
 
                var  ( area,  qx,  qy,  ixx,  iyy,  ixy) = _fea.geometric_properties(item.GetTriCoords());
 

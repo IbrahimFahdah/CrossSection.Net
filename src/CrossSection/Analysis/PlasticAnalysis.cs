@@ -40,8 +40,8 @@ namespace CrossSection.Analysis
 
         (double, double) _c_top, _c_bot;
         double _f_top;
-       Vector evaluate_force_eq_u;
-       Vector evaluate_force_eq_u_p;
+        double[] evaluate_force_eq_u;
+        double[] evaluate_force_eq_u_p;
 
         public void Solve(SectionDefinition sec)
         {
@@ -63,10 +63,10 @@ namespace CrossSection.Analysis
             //# calculate distances to the extreme fibres
             var fibres = calculate_extreme_fibres(sec, mesh, 0);
 
-            var u = new Vector(new[] { 1.0, 0 });
+            var u = new[] { 1.0, 0 };
 
             //  # 1a) Calculate x-axis plastic centroid
-            var fibres_x =new Vector(new[] { fibres.v_min, fibres.v_max });
+            var fibres_x = new[] { fibres.v_min, fibres.v_max };
             (double y_pc, bool r, double f, (double x, double y) c_top, (double x, double y) c_bot) =
                 pc_algorithm(u, fibres_x, 1);
 
@@ -75,8 +75,8 @@ namespace CrossSection.Analysis
 
 
             //# 1b) Calculate y-axis plastic centroid
-            u = new Vector(new[] { 0, 1.0 });
-           Vector fibres_y = new Vector(new[] { fibres.u_min, fibres.u_max });
+            u = new[] { 0, 1.0 };
+            var fibres_y = new[] { fibres.u_min, fibres.u_max };
             (double x_pc, bool r2, double f2, (double x, double y) c_top2, (double x, double y) c_bot2) =
                 pc_algorithm(u, fibres_y, 2);
 
@@ -88,13 +88,13 @@ namespace CrossSection.Analysis
             var angle = secPro.phi * Math.PI / 180;
 
             //# unit vectors in the axis directions
-           Vector ux = new Vector(new[] { Math.Cos(angle), Math.Sin(angle) });
-           Vector uy = new Vector(new[] { -Math.Sin(angle), Math.Cos(angle) });
+            var ux = new[] { Math.Cos(angle), Math.Sin(angle) };
+            var uy = new[] { -Math.Sin(angle), Math.Cos(angle) };
 
             fibres = calculate_extreme_fibres(sec, mesh, secPro.phi);
 
             //# 2a) Calculate 11-axis plastic centroid
-            fibres_x =new Vector(new[] { fibres.v_min, fibres.v_max });
+            fibres_x = new[] { fibres.v_min, fibres.v_max };
             (double y22_pc, bool r11, double f11, (double x, double y) c_top11, (double x, double y) c_bot11) =
                 pc_algorithm(ux, fibres_x, 1);
 
@@ -107,7 +107,7 @@ namespace CrossSection.Analysis
             secPro.s11 = f * Math.Abs(c_top_p.y2 - c_bot_p.y2);
 
             //# 2b) Calculate 22-axis plastic centroid
-            fibres_y = new Vector(new[] { fibres.u_min, fibres.u_max });
+            fibres_y = new[] { fibres.u_min, fibres.u_max };
             (double x11_pc, bool r22, double f22, (double x, double y) c_top22, (double x, double y) c_bot22) =
                 pc_algorithm(uy, fibres_y, 2);
 
@@ -134,17 +134,17 @@ namespace CrossSection.Analysis
         /// the force in the top of the section* f_top* and the location of the centroids of the top and bottom areas *c_top* and *c_bottom*
         /// </returns>
         private (double d, bool r, double f_top, (double, double) c_top, (double, double) c_bot) pc_algorithm(
-           Vector u,Vector dlim, int axis)
+           double[] u, double[] dlim, int axis)
         {
             //# calculate vector perpendicular to u
-           Vector u_p;
+            double[] u_p;
             if (axis == 1)
             {
-                u_p =new Vector(new[] { -u[1], u[0] });
+                u_p = new[] { -u[1], u[0] };
             }
             else
             {
-                u_p = new Vector(new[] { u[1], -u[0] });
+                u_p = new[] { u[1], -u[0] };
             }
 
             var a = dlim[0];
@@ -152,7 +152,7 @@ namespace CrossSection.Analysis
 
             evaluate_force_eq_u = u;
             evaluate_force_eq_u_p = u_p;
-            SolutionSettings settings = _sec.SolutionSettings; 
+            SolutionSettings settings = _sec.SolutionSettings;
 
             var r = Brent.TryFindRoot(evaluate_force_eq, a, b, settings.PlasticAxisAccuracy,
                 settings.PlasticAxisMaxIterations, out var d);
@@ -210,11 +210,11 @@ namespace CrossSection.Analysis
         private double evaluate_force_eq(double d)
         {
             //Unit vector defining the direction of the axis
-           Vector u = evaluate_force_eq_u;
+            var u = evaluate_force_eq_u;
 
             // Unit vector perpendicular to the direction of the axis
-           Vector u_p = evaluate_force_eq_u_p;
-            var p = new Vector(new[] { d * u_p[0], d * u_p[1] });
+            var u_p = evaluate_force_eq_u_p;
+            var p = new[] { d * u_p[0], d * u_p[1] };
 
             //# calculate force equilibrium
             var (f_top, f_bot) = calculate_plastic_force(_sec, _mesh, u, p);
@@ -233,8 +233,8 @@ namespace CrossSection.Analysis
         /// <param name="u">Unit vector defining the direction of the axis</param>
         /// <param name="p">Point on the axis</param>
         /// <returns> Force in the top and bottom areas *(f_top, f_bot)*</returns>
-        private (double f_top, double f_bot) calculate_plastic_force(SectionDefinition sec, Mesh mesh,Vector u,
-           Vector p)
+        private (double f_top, double f_bot) calculate_plastic_force(SectionDefinition sec, Mesh mesh, double[] u,
+           double[] p)
         {
             //# initialise variables
             var f = (top: 0.0, bot: 0.0);
@@ -242,11 +242,10 @@ namespace CrossSection.Analysis
             var qx = (top: 0.0, bot: 0.0);
             var qy = (top: 0.0, bot: 0.0);
 
-            Matrix coords = null;
             foreach (var item in mesh.Triangles)
             {
                 var contour = sec.Contours.FirstOrDefault(c => c.Material?.Id == item.Label);
-                 var mat = contour.Material;
+                var mat = contour.Material;
 
                 var (f_el, ea_el, qx_el, qy_el, is_above) =
                     _fea.plastic_properties(mat, item.GetTriCoords(), u, p);

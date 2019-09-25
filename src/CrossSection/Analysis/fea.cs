@@ -24,6 +24,7 @@
 
 using System;
 using System.Collections.Generic;
+using CrossSection.Analysis;
 using CrossSection.DataModel;
 using CrossSection.Maths;
 
@@ -31,16 +32,6 @@ namespace CrossSection
 {
     public class fea
     {
-        private readonly Dictionary<int, Matrix> _gauss_points = new Dictionary<int, Matrix>();
-
-        private readonly static Matrix tmp = new Matrix(new double[,]
-                                                  {
-                                                        {0, 0},
-                                                        {1, 0},
-                                                        {0, 1}
-                                                  });
-
-        private readonly static Vector J_upper = new Vector(new[] { 1.0, 1.0, 1.0 });
 
         /// <summary>
         /// Calculates the geometric properties for the current finite element.
@@ -59,15 +50,15 @@ namespace CrossSection
             var ixy = 0.0;
 
             //Gauss points for 6 point Gaussian integration
-            var gps = gauss_points(6);
+            var gps = ShapeFunctionHelper.gauss_points(6);
             Matrix B = null;
             double[] N;
             double j;
-            for (int i = 0; i < gps.RowCount; i++)
+            for (int i = 0; i < gps.RowCount(); i++)
             {
                 var gp = gps.Row(i);
 
-                shape_function(coords, gp, out N, ref B, out j);
+                ShapeFunctionHelper.shape_function(coords, gp, out N, out B, out j);
 
                 area += gp[0] * j;
 
@@ -96,7 +87,7 @@ namespace CrossSection
         /// <param name="p">Point on the line</param>
         /// <returns></returns>
         public (double f_el, double ea_el, double qx_el, double qy_el, bool is_above) plastic_properties(SectionMaterial mat,
-               double[][] coords, Vector u, Vector p)
+               double[][] coords, double[] u, double[] p)
         {
             //# initialise geometric properties
             var e = mat.elastic_modulus;
@@ -105,16 +96,16 @@ namespace CrossSection
             var qy = 0.0;
             var force = 0.0;
 
-            var gps = gauss_points(3);
+            var gps = ShapeFunctionHelper.gauss_points(3);
             Matrix B = null;
             double[] N;
             double j;
 
-            for (int i = 0; i < gps.RowCount; i++)
+            for (int i = 0; i < gps.RowCount(); i++)
             {
                 var gp = gps.Row(i);
 
-                shape_function(coords, gp, out N, ref B, out j);
+                ShapeFunctionHelper.shape_function(coords, gp, out N, out B, out j);
                 area += gp[0] * j;
 
                 var x = N.Dot(coords.Row(1));
@@ -140,36 +131,36 @@ namespace CrossSection
         /// <param name="mat"></param>
         /// <param name="coords"></param>
         /// <returns>Element stiffness matrix *(k_el)* and element torsion load vector* (f_el) *</returns>
-        public void torsion_properties(SectionMaterial mat, double[][] coords, ref Matrix k_el, ref Vector f_el)
+        internal void torsion_properties(SectionMaterial mat, ExtendedTri tri, out double[,] k_el, out double[] f_el)
         {
             //# initialise stiffness matrix and load vector
-            k_el = k_el == null ? new Matrix(6, 6) : k_el.Clear();
-            f_el = f_el == null ? new Vector(6) : f_el.Clear();
+            k_el = new double[6, 6];
+            f_el = new double[6];
 
 
             //# Gauss points for 6 point Gaussian integration
-            var gps = gauss_points(6);
-            Matrix B = null;
-            Vector Nxy = new Vector(2);
-            for (int i = 0; i < gps.RowCount; i++)
+            var gps = ShapeFunctionHelper.gauss_points(6);
+            var Nxy = new double[2];
+
+            for (int i = 0; i < gps.RowCount(); i++)
             {
                 var gp = gps.Row(i);
-                double[] N;
-                double j;
 
-                shape_function(coords, gp, out N, ref B, out j);
+                var B = tri.ShapeInfo[i].B.ToArray();
+                double[] N = tri.ShapeInfo[i].N;
+                double j = tri.ShapeInfo[i].j;
 
                 //# determine x and y position at Gauss point
-                var Nx = N.Dot(coords.Row(0));
-                var Ny = N.Dot(coords.Row(1));
-                var B_Transpose = B.Transpose;
+                var Nx = N.Dot(tri.coords.Row(0));
+                var Ny = N.Dot(tri.coords.Row(1));
+                var B_Transpose = B.Transpose();
 
                 //# calculated modulus weighted stiffness matrix and load vector
-                k_el.Append(gp[0] * (B_Transpose * B) * j * mat.elastic_modulus);
+                k_el.Append(gp[0].MultiplyBy(B_Transpose.Dot(B)).MultiplyBy(j * mat.elastic_modulus));
 
                 Nxy[0] = Ny;
                 Nxy[1] = -Nx;
-                f_el += gp[0] * B_Transpose * Nxy * j * mat.elastic_modulus;
+                f_el.Append(gp[0].MultiplyBy(B_Transpose.Dot(Nxy)).MultiplyBy(j * mat.elastic_modulus));
             }
         }
 
@@ -183,31 +174,32 @@ namespace CrossSection
         /// <param name="ixy">Second moment of area about the centroidal xy-axis</param>
         /// <param name="nu">Effective Poisson's ratio for the cross-section</param>
         /// <returns>Element shear load vector psi *(f_psi)* and phi *(f_phi)*</returns>
-        public (Vector f_psi, Vector f_phi) shear_load_vectors(SectionMaterial mat,
-            double[][] coords, double ixx, double iyy, double ixy, double nu)
+        internal (Vector f_psi, Vector f_phi) shear_load_vectors(SectionMaterial mat,
+            ExtendedTri tri, double ixx, double iyy, double ixy, double nu)
         {
             //# initialise stiffness matrix and load vector
             Vector f_psi = new Vector(6);
             Vector f_phi = new Vector(6);
 
             //# Gauss points for 6 point Gaussian integration
-            var gps = gauss_points(6);
+            var gps = ShapeFunctionHelper.gauss_points(6);
 
             Matrix d = new Matrix(2, 1);
             Matrix h = new Matrix(2, 1);
-            Matrix B = null;
-            double[] N;
-            double j;
 
-            for (int i = 0; i < gps.RowCount; i++)
+
+            for (int i = 0; i < gps.RowCount(); i++)
             {
                 var gp = gps.Row(i);
 
-                shape_function(coords, gp, out N, ref B, out j);
+                // shape_function(coords, gp, out N, ref B, out j);
+                Matrix B = tri.ShapeInfo[i].B;
+                double[] N = tri.ShapeInfo[i].N;
+                double j = tri.ShapeInfo[i].j;
 
                 //# determine x and y position at Gauss point
-                var Nx = N.Dot(coords.Row(0));
-                var Ny = N.Dot(coords.Row(1));
+                var Nx = N.Dot(tri.coords.Row(0));
+                var Ny = N.Dot(tri.coords.Row(1));
 
                 //# determine shear parameters
                 var r = Nx * Nx - Ny * Ny;
@@ -249,8 +241,8 @@ namespace CrossSection
         /// <param name="omega">Values of the warping function at the element nodes</param>
         /// <returns>Shear centre integrals about the x and y-axes *(sc_xint, sc_yint)*,
         /// warping integrals *(q_omega, i_omega, i_xomega, i_yomega)*</returns>
-        public (double sc_xint, double sc_yint, double q_omega, double i_omega, double i_xomega, double i_yomega)
-            shear_warping_integrals(SectionMaterial mat, double[][] coords, double ixx, double iyy, double ixy, double[] omega)
+        internal (double sc_xint, double sc_yint, double q_omega, double i_omega, double i_xomega, double i_yomega)
+            shear_warping_integrals(SectionMaterial mat, ExtendedTri tri, double ixx, double iyy, double ixy, double[] omega)
         {
             //# initialise integrals
             var sc_xint = 0.0;
@@ -260,20 +252,21 @@ namespace CrossSection
             var i_xomega = 0.0;
             var i_yomega = 0.0;
 
-            var gps = gauss_points(6);
-            Matrix B = null;
-            double[] N;
-            double j;
+            var gps = ShapeFunctionHelper.gauss_points(6);
 
-            for (int i = 0; i < gps.RowCount; i++)
+
+            for (int i = 0; i < gps.RowCount(); i++)
             {
                 var gp = gps.Row(i);
 
-                shape_function(coords, gp, out N, ref B, out j);
+                //shape_function(coords, gp, out N, ref B, out j);
+                Matrix B = tri.ShapeInfo[i].B;
+                double[] N = tri.ShapeInfo[i].N;
+                double j = tri.ShapeInfo[i].j;
 
                 //# determine x and y position at Gauss point
-                var Nx = N.Dot(coords.Row(0));
-                var Ny = N.Dot(coords.Row(1));
+                var Nx = N.Dot(tri.coords.Row(0));
+                var Ny = N.Dot(tri.coords.Row(1));
 
                 var Nomega = N.Dot(omega);
 
@@ -301,30 +294,32 @@ namespace CrossSection
         /// <param name="phi_shear">Values of the phi shear function at the element nodes</param>
         /// <param name="nu">Effective Poisson's ratio for the cross-section</param>
         /// <returns></returns>
-        public (double kappa_x, double kappa_y, double kappa_xy) shear_coefficients(SectionMaterial mat,
-          double[][] coords, double ixx, double iyy, double ixy, Vector psi_shear, Vector phi_shear, double nu)
+        internal (double kappa_x, double kappa_y, double kappa_xy) shear_coefficients(SectionMaterial mat,
+           ExtendedTri tri, double ixx, double iyy, double ixy, double[] psi_shear2, double[] phi_shear2, double nu)
         {
             //# initialise integrals
             var kappa_x = 0.0;
             var kappa_y = 0.0;
             var kappa_xy = 0.0;
 
-            var gps = gauss_points(6);
+            var gps = ShapeFunctionHelper.gauss_points(6);
             Vector d = new Vector(2);
             Vector h = new Vector(2);
-            Matrix B = null;
-            double[] N;
-            double j;
+            var psi_shear = new Vector(psi_shear2);
+            var phi_shear = new Vector(phi_shear2);
 
-            for (int i = 0; i < gps.RowCount; i++)
+            for (int i = 0; i < gps.RowCount(); i++)
             {
                 var gp = gps.Row(i);
 
-                shape_function(coords, gp, out N, ref B, out j);
+                //shape_function(coords, gp, out N, ref B, out j);
+                Matrix B = tri.ShapeInfo[i].B;
+                double[] N = tri.ShapeInfo[i].N;
+                double j = tri.ShapeInfo[i].j;
 
                 //# determine x and y position at Gauss point
-                var Nx = N.Dot(coords.Row(0));
-                var Ny = N.Dot(coords.Row(1));
+                var Nx = N.Dot(tri.coords.Row(0));
+                var Ny = N.Dot(tri.coords.Row(1));
 
                 //# determine shear parameters
                 var r = Nx * Nx - Ny * Ny;
@@ -365,7 +360,7 @@ namespace CrossSection
         /// <param name="coords"></param>
         /// <param name="phi">Principal bending axis angle</param>
         /// <returns></returns>
-        public (double int_x, double int_y, double int_11, double int_22) monosymmetry_integrals(SectionMaterial mat, double[][] coords, double phi)
+        internal (double int_x, double int_y, double int_11, double int_22) monosymmetry_integrals(SectionMaterial mat, ExtendedTri tri, double phi)
         {
             //# initialise integrals
             var int_x = 0.0;
@@ -373,20 +368,21 @@ namespace CrossSection
             var int_11 = 0.0;
             var int_22 = 0.0;
 
-            var gps = gauss_points(6);
-            Matrix B = null;
-            double[] N;
-            double j;
+            var gps = ShapeFunctionHelper.gauss_points(6);
 
-            for (int i = 0; i < gps.RowCount; i++)
+
+            for (int i = 0; i < gps.RowCount(); i++)
             {
                 var gp = gps.Row(i);
 
-                shape_function(coords, gp, out N, ref B, out j);
+                // shape_function(coords, gp, out N, ref B, out j);
+                Matrix B = tri.ShapeInfo[i].B;
+                double[] N = tri.ShapeInfo[i].N;
+                double j = tri.ShapeInfo[i].j;
 
                 //# determine x and y position at Gauss point
-                var Nx = N.Dot(coords.Row(0));
-                var Ny = N.Dot(coords.Row(1));
+                var Nx = N.Dot(tri.coords.Row(0));
+                var Ny = N.Dot(tri.coords.Row(1));
 
                 //# determine 11 and 22 position at Gauss point
                 (var Nx_11, var Ny_22) = principal_coordinate(phi, Nx, Ny);
@@ -429,131 +425,7 @@ namespace CrossSection
             return (rotated[0, 0], rotated[1, 0]);
         }
 
-        /// <summary>
-        /// the Gaussian weights and locations for *n* point Gaussian integration of a quadratic triangular element.
-        /// </summary>
-        /// <param name="n"> Number of Gauss points (1, 3 or 6)</param>
-        /// <returns>An *n x 4* matrix consisting of the integration weight and the
-        /// eta, xi and zeta locations for *n* Gauss points</returns>
-        private Matrix gauss_points(int n)
-        {
-            double[,] x = null;
 
-            if (_gauss_points.ContainsKey(n))
-            {
-                return _gauss_points[n];
-            }
-
-            if (n == 1)
-
-            {
-                // one point gaussian integration
-                x = new double[,] { { 1, 1.0 / 3, 1.0 / 3, 1.0 / 3 } };
-            }
-
-            if (n == 3)
-            {
-                // three point gaussian integration
-                x = new double[,]
-                    {
-                        {
-                            1.0 / 3, 2.0 / 3, 1.0 / 6, 1.0 / 6
-                        },
-                        {1.0 / 3, 1.0 / 6, 2.0 / 3, 1.0 / 6},
-                        {1.0 / 3, 1.0 / 6, 1.0 / 6, 2.0 / 3}
-                    };
-            }
-
-            if (n == 6)
-            {
-                // six point gaussian integration
-                var g1 = 1.0 / 18 * (8 - Math.Sqrt(10) + Math.Sqrt(38 - 44 * Math.Sqrt(2.0 / 5)));
-                var g2 = 1.0 / 18 * (8 - Math.Sqrt(10) - Math.Sqrt(38 - 44 * Math.Sqrt(2.0 / 5)));
-                var w1 = (620 + Math.Sqrt(213125 - 53320 * Math.Sqrt(10))) / 3720;
-                var w2 = (620 - Math.Sqrt(213125 - 53320 * Math.Sqrt(10))) / 3720;
-
-                x = new double[,]
-                    {
-                        {w2, 1 - 2 * g2, g2, g2},
-                        {w2, g2, 1 - 2 * g2, g2},
-                        {w2, g2, g2, 1 - 2 * g2},
-                        {w1, g1, g1, 1 - 2 * g1},
-                        {w1, 1 - 2 * g1, g1, g1},
-                        {w1, g1, 1 - 2 * g1, g1}
-                    };
-            }
-
-
-            Matrix m = new Matrix(x);
-            _gauss_points.Add(n, m);
-            return m;
-        }
-
-        /// <summary>
-        /// Computes shape functions, shape function derivatives and the determinant
-        /// of the Jacobian matrix for a tri 6 element at a given Gauss point.
-        /// </summary>
-        /// <param name="coords">Global coordinates of the quadratic triangle vertices</param>
-        /// <param name="gauss_point">Gaussian weight and isoparametric location of the Gauss point</param>
-        /// <param name="N">The value of the shape functions at the given Gauss point [1 x 6]</param>
-        /// <param name="B">the derivative of the shape functions in the j-th global direction* B(i, j)* [2 x 6]</param>
-        /// <param name="j">the determinant of the Jacobian matrix *j*</param>
-        private void shape_function(double[][] coords, Vector gauss_point, out double[] N, ref Matrix B, out double j)
-        {
-            // location of isoparametric co-ordinates for each Gauss point
-            var eta = gauss_point[1];
-            var xi = gauss_point[2];
-            var zeta = gauss_point[3];
-
-
-            N = new[]
-                        {
-                            eta * (2 * eta - 1),
-                            xi * (2 * xi - 1),
-                            zeta * (2 * zeta - 1),
-                            4 * eta * xi,
-                            4 * xi * zeta,
-                            4 * eta * zeta
-                        };
-
-
-            var B_iso = new double[][]
-                                                 {
-                                                 new double[]     {4 * eta - 1, 0, 0, 4 * xi, 0, 4 * zeta},
-                                                  new double[]      {0, 4 * xi - 1, 0, 4 * eta, 4 * zeta, 0},
-                                                  new double[]      {0, 0, 4 * zeta - 1, 0, 4 * xi, 4 * eta}
-                                                 };
-
-            var B_iso_Transpose = B_iso.Transpose();
-
-            var J_lower = coords.Dot(B_iso_Transpose);
-
-            var rows = new double[3][];
-            rows[0] = J_upper.ToArray();
-            for (int i = 0; i < 2; i++)
-            {
-                rows[i + 1] = J_lower.Row(i);
-            }
-
-            Matrix J = new Matrix(rows);
-
-            //calculate the jacobian
-            j = 0.5 * J.Determinant;
-
-            B = B == null ? new Matrix(2, 6) : B.Clear();
-
-            if (j != 0)
-            {
-                //#if the area of the element is not zero
-                //# cacluate the P matrix
-
-                var P = J.Inverse * tmp;
-
-                //# calculate the B matrix in terms of cartesian co-ordinates
-                B.Append((new Matrix(B_iso_Transpose) * P).Transpose);
-            }
-
-        }
 
         /// <summary>
         /// Determines whether a point *(x, y)* is a above or below the line defined
@@ -565,10 +437,10 @@ namespace CrossSection
         /// <param name="x">x coordinate of the point to be tested</param>
         /// <param name="y">y coordinate of the point to be tested</param>
         /// <returns> *True* if the point is above the line or *False* if the point is below the line</returns>
-        private bool point_above_line(Vector u, double px, double py, double x, double y)
+        private bool point_above_line(double[] u, double px, double py, double x, double y)
         {
             //# vector from point to point on line
-            Vector PQ = new Vector(new[] { px - x, py - y });
+            var PQ = new[] { px - x, py - y };
             return PQ[0] * u[1] - PQ[1] * u[0] > 0;
         }
     }

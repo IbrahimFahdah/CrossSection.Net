@@ -32,11 +32,11 @@ namespace CrossSection.Maths
     /// </remarks>
     public class CholeskyDecom : CholeskyDecomBase
     {
-        public CholeskyDecom(Matrix Arg)
+        public CholeskyDecom(double[,] Arg)
         {
 
             // Initialize.
-            L = Arg.ToArray();
+            L = (double[,])Arg.Clone();
 
             int n = L.GetLength(0);
 

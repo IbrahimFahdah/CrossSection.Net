@@ -36,7 +36,7 @@ namespace CrossSection.Maths
     /// </summary>
     public class Matrix
     {
-        private Matrix<double> _m;
+        public Matrix<double> _m;
         public static int count;
         public Matrix(Matrix<double> m)
         {

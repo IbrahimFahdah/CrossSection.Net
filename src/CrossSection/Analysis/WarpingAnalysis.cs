@@ -34,48 +34,8 @@ using TriangleNet.Topology;
 
 namespace CrossSection.Analysis
 {
-    public class WarpingAnalysis
+    public partial class WarpingAnalysis
     {
-        internal class TriNode
-        {
-            public int Index { get; set; }
-            public int VertexId1 { get; set; }
-            public int VertexId2 { get; set; }
-
-            internal TriNode(int index, int id1, int id2)
-            {
-                Index = index;
-                VertexId1 = id1;
-                VertexId2 = id2;
-            }
-
-        }
-
-        internal class ExtendedTri
-        {
-            internal Triangle _tri;
-            internal TriNode[] _nodes;
-            internal ExtendedTri(Triangle tri, TriNode[] nodes)
-            {
-                _tri = tri;
-                _nodes = nodes;
-            }
-
-            public int Label => _tri.Label;
-
-            public double[][] coords => _tri.GetTriCoords();
-
-            internal void TriangleData( out int n0, out int n1, out int n2, out int n3, out int n4, out int n5)
-            {
-               
-                n0 =  _nodes[0].Index;
-                n1 = _nodes[1].Index;
-                n2 = _nodes[2].Index;
-                n3 = _nodes[3].Index;
-                n4 = _nodes[4].Index;
-                n5 = _nodes[5].Index;
-            }
-        }
 
         fea _fea = new fea();
 
@@ -107,7 +67,7 @@ namespace CrossSection.Analysis
             (var K, var f_torsion) = assemble_torsion(sec, _mesh, Tris, nodeCount);
 
             //solve Cholesky decomposition. 
-            CholeskyDecomBase Cholesky = new CholeskyDecomOptimized (K);
+            CholeskyDecomBase Cholesky = new CholeskyDecomOptimized(K);
 
             //# solve for warping function
             var omega = Cholesky.Solve(f_torsion);
@@ -115,14 +75,14 @@ namespace CrossSection.Analysis
             sec.Output.SectionProperties.omega = omega.ToArray();
 
             //# determine the torsion constant
-            sec.Output.SectionProperties.j = sec.Output.SectionProperties.ixx_c + sec.Output.SectionProperties.iyy_c - omega * K * omega;
+            sec.Output.SectionProperties.j = sec.Output.SectionProperties.ixx_c + sec.Output.SectionProperties.iyy_c - omega.Dot(K).Dot(omega);
 
             //======================# assemble shear function load vectors
-            Vector f_psi = new Vector(nodeCount);
-            Vector f_phi = new Vector(nodeCount);
+            var f_psi = new double[nodeCount];
+            var f_phi = new double[nodeCount];
 
             int n0, n1, n2, n3, n4, n5;
-            var coords = new Matrix(2, 6);
+
             foreach (var item in Tris)
             {
 
@@ -132,7 +92,7 @@ namespace CrossSection.Analysis
                 var ixx_c = sec.Output.SectionProperties.ixx_c;
                 var iyy_c = sec.Output.SectionProperties.iyy_c;
                 var ixy_c = sec.Output.SectionProperties.ixy_c;
-                (Vector f_psi, Vector f_phi) el = _fea.shear_load_vectors(mat, item.coords, ixx_c, iyy_c,
+                (Vector f_psi, Vector f_phi) el = _fea.shear_load_vectors(mat, item, ixx_c, iyy_c,
                     ixy_c, sec.Output.SectionProperties.nu_eff);
 
                 var n = new[] { n0, n1, n2, n3, n4, n5 };
@@ -162,7 +122,7 @@ namespace CrossSection.Analysis
             foreach (var item in Tris)
             {
                 var mat = sec.Contours.First(c => c.Material?.Id == item.Label).Material;
-                item.TriangleData(  out n0, out n1, out n2, out n3, out n4, out n5);
+                item.TriangleData(out n0, out n1, out n2, out n3, out n4, out n5);
 
                 var ixx_c = sec.Output.SectionProperties.ixx_c;
                 var iyy_c = sec.Output.SectionProperties.iyy_c;
@@ -170,14 +130,14 @@ namespace CrossSection.Analysis
 
                 var n = new[] { n0, n1, n2, n3, n4, n5 };
 
-                Vector omega2 = new Vector(6);
+                var omega2 = new double[6];
                 for (int i = 0; i < 6; i++)
                 {
                     omega2[i] = omega[n[i]];
                 }
 
                 (double sc_xint, double sc_yint, double q_omega, double i_omega, double i_xomega, double i_yomega) el =
-                    _fea.shear_warping_integrals(mat, item.coords, ixx_c, iyy_c, ixy_c, omega2.ToArray());
+                    _fea.shear_warping_integrals(mat, item, ixx_c, iyy_c, ixy_c, omega2);
 
 
                 sc_xint += el.sc_xint;
@@ -196,9 +156,9 @@ namespace CrossSection.Analysis
             sec.Output.SectionProperties.ixx_c * sec.Output.SectionProperties.iyy_c -
              sec.Output.SectionProperties.ixy_c * sec.Output.SectionProperties.ixy_c);
             var x_se = (1 / Delta_s) * ((sec.Output.SectionProperties.nu_eff / 2 * sc_xint) -
-                                    f_torsion * phi_shear);
+                                     f_torsion.Dot(phi_shear));
             var y_se = (1 / Delta_s) * ((sec.Output.SectionProperties.nu_eff / 2 * sc_yint) +
-                                     f_torsion * psi_shear);
+                                     f_torsion.Dot(psi_shear));
             (double x11_se, double y22_se) = _fea.principal_coordinate(sec.Output.SectionProperties.phi,
                                             x_se, y_se);
 
@@ -238,7 +198,7 @@ namespace CrossSection.Analysis
             foreach (var item in Tris)
             {
                 var mat = sec.Contours.First(c => c.Material?.Id == item.Label).Material;
-                item.TriangleData( out n0, out n1, out n2, out n3, out n4, out n5);
+                item.TriangleData(out n0, out n1, out n2, out n3, out n4, out n5);
 
                 var ixx_c = sec.Output.SectionProperties.ixx_c;
                 var iyy_c = sec.Output.SectionProperties.iyy_c;
@@ -246,8 +206,8 @@ namespace CrossSection.Analysis
                 var nu_eff = sec.Output.SectionProperties.nu_eff;
                 var n = new[] { n0, n1, n2, n3, n4, n5 };
 
-                Vector psi_shear2 = new Vector(6);
-                Vector phi_shear2 = new Vector(6);
+                var psi_shear2 = new double[6];
+                var phi_shear2 = new double[6];
                 for (int i = 0; i < 6; i++)
                 {
                     psi_shear2[i] = psi_shear[n[i]];
@@ -255,7 +215,7 @@ namespace CrossSection.Analysis
                 }
 
                 (var kappa_x_el, var kappa_y_el, var kappa_xy_el) =
-                    _fea.shear_coefficients(mat, item.coords, ixx_c, iyy_c, ixy_c, psi_shear2, phi_shear2, nu_eff);
+                    _fea.shear_coefficients(mat, item, ixx_c, iyy_c, ixy_c, psi_shear2, phi_shear2, nu_eff);
 
 
                 kappa_x += kappa_x_el;
@@ -276,13 +236,13 @@ namespace CrossSection.Analysis
 
             //# rotate the tensor by the principal axis angle
             var phi_rad = sec.Output.SectionProperties.phi * Math.PI / 180;
-            Matrix R = new Matrix(new double[,]{ { Math.Cos (phi_rad), Math.Sin (phi_rad) },
-                       { -Math.Sin (phi_rad), Math.Cos (phi_rad) } });
+            var R = new double[,]{ { Math.Cos (phi_rad), Math.Sin (phi_rad) },
+                       { -Math.Sin (phi_rad), Math.Cos (phi_rad) } };
 
-            Matrix alpha = new Matrix(new double[,]{ { alpha_xx, alpha_xy },
-                       { alpha_xy, alpha_yy } });
+            var alpha = new double[,]{ { alpha_xx, alpha_xy },
+                       { alpha_xy, alpha_yy } };
 
-            Matrix rotatedAlpha = R * alpha * R.Transpose;
+            var rotatedAlpha = R.Dot(alpha).Dot(R.Transpose());
 
             //# recalculate the shear area based on the rotated alpha value
             sec.Output.SectionProperties.A_s11 = sec.Output.SectionProperties.Area / rotatedAlpha[0, 0];
@@ -299,22 +259,14 @@ namespace CrossSection.Analysis
             foreach (var item in Tris)
             {
                 var mat = sec.Contours.First(c => c.Material?.Id == item.Label).Material;
-                item.TriangleData( out n0, out n1, out n2, out n3, out n4, out n5);
+                item.TriangleData(out n0, out n1, out n2, out n3, out n4, out n5);
 
 
                 var phi = sec.Output.SectionProperties.phi;
                 var n = new[] { n0, n1, n2, n3, n4, n5 };
 
-                Vector psi_shear2 = new Vector(6);
-                Vector phi_shear2 = new Vector(6);
-                for (int i = 0; i < 6; i++)
-                {
-                    psi_shear2[i] = psi_shear[n[i]];
-                    phi_shear2[i] = phi_shear[n[i]];
-                }
-
                 (var int_x_el, var int_y_el, var int_11_el, var int_22_el) =
-                    _fea.monosymmetry_integrals(mat, item. coords, phi);
+                    _fea.monosymmetry_integrals(mat, item, phi);
 
 
                 int_x += int_x_el;
@@ -345,25 +297,24 @@ namespace CrossSection.Analysis
         }
 
 
-        private (Matrix K, Vector f_torsion) assemble_torsion(SectionDefinition sec, Mesh mesh, List<ExtendedTri> Tris, int nodeCount)
+        private (double[,] K, double[] f_torsion) assemble_torsion(SectionDefinition sec, Mesh mesh, List<ExtendedTri> Tris, int nodeCount)
         {
-            Vector ff = new Vector(nodeCount);
-            Matrix kk = new Matrix(nodeCount, nodeCount);
+            double[] ff = new double[nodeCount];
+            double[,] kk = new double[nodeCount, nodeCount];
 
             //# initialise stiffness matrix and load vector
-            Matrix k_el = null;
-            Vector f_el = null;
+            double[,] k_el = null;
+            double[] f_el = null;
             int n0, n1, n2, n3, n4, n5;
-            var coords = new Matrix(2, 6);
 
             foreach (var item in Tris)
             {
                 var mat = sec.Contours.First(c => c.Material?.Id == item.Label).Material;
 
-                item.TriangleData( out n0, out n1, out n2, out n3, out n4, out n5);
+                item.TriangleData(out n0, out n1, out n2, out n3, out n4, out n5);
 
                 // # calculate the element stiffness matrix and torsion load vector
-                _fea.torsion_properties(mat, item.coords, ref k_el, ref f_el);
+                _fea.torsion_properties(mat, item, out k_el, out f_el);
 
                 var n = new[] { n0, n1, n2, n3, n4, n5 };
 
@@ -387,7 +338,7 @@ namespace CrossSection.Analysis
 
         }
 
-      
+
         private List<ExtendedTri> BuildTriNodesList(Mesh mesh, out int nodeCount)
         {
             List<ExtendedTri> tri = new List<ExtendedTri>();
@@ -407,15 +358,15 @@ namespace CrossSection.Analysis
                     nodes.Add(n0);
                 }
 
-                var n1 = nodes.FirstOrDefault(n => v1.ID == n.VertexId1); 
-                if (n1==null)
+                var n1 = nodes.FirstOrDefault(n => v1.ID == n.VertexId1);
+                if (n1 == null)
                 {
                     n1 = new TriNode(index++, v1.ID, v1.ID);
                     nodes.Add(n1);
                 }
 
                 var n2 = nodes.FirstOrDefault(n => v2.ID == n.VertexId1);
-                if (n2==null)
+                if (n2 == null)
                 {
                     n2 = new TriNode(index++, v2.ID, v2.ID);
                     nodes.Add(n2);
@@ -423,7 +374,7 @@ namespace CrossSection.Analysis
 
                 //n3
                 var n3 = nodes.FirstOrDefault(n => (n.VertexId1 == v0.ID && n.VertexId2 == v1.ID) || (n.VertexId1 == v1.ID && n.VertexId2 == v0.ID));
-                if (n3==null)
+                if (n3 == null)
                 {
                     n3 = new TriNode(index++, v0.ID, v1.ID);
                     nodes.Add(n3);
@@ -432,7 +383,7 @@ namespace CrossSection.Analysis
 
                 //n4
                 var n4 = nodes.FirstOrDefault(n => (n.VertexId1 == v1.ID && n.VertexId2 == v2.ID) || (n.VertexId1 == v2.ID && n.VertexId2 == v1.ID));
-                if (n4==null)
+                if (n4 == null)
                 {
                     n4 = new TriNode(index++, v1.ID, v2.ID);
                     nodes.Add(n4);

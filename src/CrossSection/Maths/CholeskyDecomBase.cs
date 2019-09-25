@@ -35,9 +35,9 @@ namespace CrossSection.Maths
 
        
 
-        public Matrix GetL()
+        public double[,] GetL()
         {
-            return new Matrix(L);
+            return L;
         }
 
 
@@ -46,16 +46,16 @@ namespace CrossSection.Maths
         /// <returns>X so that L*L'*X = B</returns>
         /// <exception cref="System.ArgumentException">Matrix row dimensions must agree.</exception>
         /// <exception cref="System.SystemException">Matrix is not symmetric positive definite.</exception>
-        public Vector Solve(Vector B)
+        public double[] Solve(double[] B)
         {
             int n = L.GetLength(0);
-            if (B.Count != n)
+            if (B.Length != n)
             {
                 throw new ArgumentException("Matrix row dimensions must agree.");
             }
 
             // Copy right hand side.
-            double[] X = B.ToArray();
+            double[] X =(double[]) B.Clone();
 
             double sum;
             int kk;
@@ -77,7 +77,7 @@ namespace CrossSection.Maths
                 X[i] = sum / L[i, i];
             }
 
-            return new Vector(X);
+            return X;
         }
     }
 }

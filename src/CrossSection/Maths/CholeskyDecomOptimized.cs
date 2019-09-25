@@ -39,19 +39,19 @@ namespace CrossSection.Maths
         /// Optimized to improve performance. This is mainly done by skipping the zeros values since the matrix is a sparse matrix, and also rearranging some bits.</summary>
         /// <param name="Arg">Square, symmetric matrix.</param>
         /// <returns>Structure to access L and isspd flag.</returns>
-        public CholeskyDecomOptimized(Matrix Arg)
+        public CholeskyDecomOptimized(double[,] Arg)
         {
             //Stopwatch sw = new Stopwatch();
             //sw.Start();
 
-            CholeskySparseMatrix Rows = new CholeskySparseMatrix(Arg.ToArray());
+            CholeskySparseMatrix Rows = new CholeskySparseMatrix(Arg);
 
             var sum2 = 0.0;
             var lastNonZero = -1;
             var firstNonZero = -1;
             //var k_ind = 0;
             int i, j;
-            int n = Arg.RowCount;
+            int n = Arg.RowCount();
 
             for (i = 0; i < n; i++)
             {
