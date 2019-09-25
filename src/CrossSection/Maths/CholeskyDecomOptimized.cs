@@ -56,11 +56,12 @@ namespace CrossSection.Maths
             for (i = 0; i < n; i++)
             {
                 double[] Rik = new double[i];
-                var sum = 0.0;
+              
                 lastNonZero = -1;
                 firstNonZero = -1;
 
                 var Vi = Rows[i];
+                var sum = Vi[i];
                 for (var k = 0; k < Vi.ValueCount; k++)
                 {
                     ref var k_ind = ref Vi.Indices[k];
@@ -83,7 +84,7 @@ namespace CrossSection.Maths
                     }
                 }
 
-                Vi[i] = Math.Sqrt(Vi[i] + sum);
+                Vi[i] = Math.Sqrt(sum);
                 var vii = Vi[i];
                 for (j = i + 1; j < n; j++)
                 {

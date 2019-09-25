@@ -36,16 +36,16 @@ namespace CrossSection.Analysis
     {
         internal class ShapeFunData
         {
-            internal Matrix B = null;
+            internal double[,] B = null;
             internal double[] N;
             internal double j;
         }
 
 
-      
+
 
         private Triangle _tri;
-        private  TriNode[] _nodes;
+        private TriNode[] _nodes;
 
         internal ShapeFunData[] ShapeInfo;
         internal ExtendedTri(Triangle tri, TriNode[] nodes)
@@ -65,7 +65,7 @@ namespace CrossSection.Analysis
             for (int i = 0; i < gps.RowCount(); i++)
             {
                 var gp = gps.Row(i);
-                Matrix B = null;
+                double[,] B = null;
                 double[] N;
                 double j;
                 ShapeFunctionHelper.shape_function(coords, gp, out N, out B, out j);
@@ -89,7 +89,7 @@ namespace CrossSection.Analysis
         }
 
 
-      
+
     }
 
 }

@@ -67,7 +67,9 @@ namespace CrossSection.Analysis
             (var K, var f_torsion) = assemble_torsion(sec, _mesh, Tris, nodeCount);
 
             //solve Cholesky decomposition. 
-            CholeskyDecomBase Cholesky = new CholeskyDecomOptimized(K);
+            var Cholesky = new CholeskyDecomOptimized(K);
+
+
 
             //# solve for warping function
             var omega = Cholesky.Solve(f_torsion);
@@ -92,7 +94,7 @@ namespace CrossSection.Analysis
                 var ixx_c = sec.Output.SectionProperties.ixx_c;
                 var iyy_c = sec.Output.SectionProperties.iyy_c;
                 var ixy_c = sec.Output.SectionProperties.ixy_c;
-                (Vector f_psi, Vector f_phi) el = _fea.shear_load_vectors(mat, item, ixx_c, iyy_c,
+                (double[] f_psi, double[] f_phi) el = _fea.shear_load_vectors(mat, item, ixx_c, iyy_c,
                     ixy_c, sec.Output.SectionProperties.nu_eff);
 
                 var n = new[] { n0, n1, n2, n3, n4, n5 };

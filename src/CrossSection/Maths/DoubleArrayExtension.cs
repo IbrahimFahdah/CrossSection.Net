@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CrossSection.Maths2;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -86,6 +87,16 @@ namespace CrossSection.Maths
 
         }
 
+        public static double[] Append(this double[] A, LMatrix B)
+        {
+
+            for (int i = 0; i < A.Length; i++)
+                A[i] += B.mat[i];
+
+            return A;
+
+        }
+
         public static double[,] Transpose(this double[,] arr)
         {
             int rowCount = arr.RowCount();
@@ -121,6 +132,26 @@ namespace CrossSection.Maths
 
         }
 
+
+        public static double[][] Dot(this double[][] A, double[,] B)
+        {
+
+            var R = new double[A.RowCounts()][];
+            for (int i = 0; i < A.RowCounts(); i++)
+            {
+                R[i] = new double[B.ColumnCounts()];
+                for (int j = 0; j < B.ColumnCounts(); j++)
+                {
+                    for (int k = 0; k < A.ColumnCounts(); k++)
+                    {
+                        R[i][j] += A[i][k] * B[k,j];
+                    }
+                }
+            }
+
+            return R;
+
+        }
 
         public static double[][] Dot(this double[][] A, double[][] B)
         {

@@ -27,7 +27,7 @@ using System.Collections.Generic;
 using CrossSection.Analysis;
 using CrossSection.DataModel;
 using CrossSection.Maths;
-
+using CrossSection.LinearAlgebra;
 namespace CrossSection
 {
     public class fea
@@ -52,14 +52,15 @@ namespace CrossSection
             //Gauss points for 6 point Gaussian integration
             var gps = ShapeFunctionHelper.gauss_points(6);
             Matrix B = null;
+            double[,] BB;
             double[] N;
             double j;
             for (int i = 0; i < gps.RowCount(); i++)
             {
                 var gp = gps.Row(i);
 
-                ShapeFunctionHelper.shape_function(coords, gp, out N, out B, out j);
-
+                ShapeFunctionHelper.shape_function(coords, gp, out N, out BB, out j);
+                B = new Matrix(BB);
                 area += gp[0] * j;
 
                 var x = N.Dot(coords.Row(1));
@@ -100,12 +101,13 @@ namespace CrossSection
             Matrix B = null;
             double[] N;
             double j;
-
+            double[,] BB;
             for (int i = 0; i < gps.RowCount(); i++)
             {
                 var gp = gps.Row(i);
 
-                ShapeFunctionHelper.shape_function(coords, gp, out N, out B, out j);
+                ShapeFunctionHelper.shape_function(coords, gp, out N, out BB, out j);
+                B = new Matrix(BB);
                 area += gp[0] * j;
 
                 var x = N.Dot(coords.Row(1));
@@ -146,7 +148,7 @@ namespace CrossSection
             {
                 var gp = gps.Row(i);
 
-                var B = tri.ShapeInfo[i].B.ToArray();
+                var B = tri.ShapeInfo[i].B;
                 double[] N = tri.ShapeInfo[i].N;
                 double j = tri.ShapeInfo[i].j;
 
@@ -174,7 +176,7 @@ namespace CrossSection
         /// <param name="ixy">Second moment of area about the centroidal xy-axis</param>
         /// <param name="nu">Effective Poisson's ratio for the cross-section</param>
         /// <returns>Element shear load vector psi *(f_psi)* and phi *(f_phi)*</returns>
-        internal (Vector f_psi, Vector f_phi) shear_load_vectors(SectionMaterial mat,
+        internal (double[] f_psi, double[] f_phi) shear_load_vectors(SectionMaterial mat,
             ExtendedTri tri, double ixx, double iyy, double ixy, double nu)
         {
             //# initialise stiffness matrix and load vector
@@ -193,7 +195,7 @@ namespace CrossSection
                 var gp = gps.Row(i);
 
                 // shape_function(coords, gp, out N, ref B, out j);
-                Matrix B = tri.ShapeInfo[i].B;
+                Matrix B = new Matrix(tri.ShapeInfo[i].B);
                 double[] N = tri.ShapeInfo[i].N;
                 double j = tri.ShapeInfo[i].j;
 
@@ -227,7 +229,7 @@ namespace CrossSection
 
             }
 
-            return (f_psi, f_phi);
+            return (f_psi.ToArray(), f_phi.ToArray());
         }
 
         /// <summary>
@@ -260,7 +262,7 @@ namespace CrossSection
                 var gp = gps.Row(i);
 
                 //shape_function(coords, gp, out N, ref B, out j);
-                Matrix B = tri.ShapeInfo[i].B;
+                Matrix B =new Matrix( tri.ShapeInfo[i].B);
                 double[] N = tri.ShapeInfo[i].N;
                 double j = tri.ShapeInfo[i].j;
 
@@ -313,7 +315,7 @@ namespace CrossSection
                 var gp = gps.Row(i);
 
                 //shape_function(coords, gp, out N, ref B, out j);
-                Matrix B = tri.ShapeInfo[i].B;
+                Matrix B =new Matrix( tri.ShapeInfo[i].B);
                 double[] N = tri.ShapeInfo[i].N;
                 double j = tri.ShapeInfo[i].j;
 
@@ -376,7 +378,7 @@ namespace CrossSection
                 var gp = gps.Row(i);
 
                 // shape_function(coords, gp, out N, ref B, out j);
-                Matrix B = tri.ShapeInfo[i].B;
+                Matrix B =new Matrix( tri.ShapeInfo[i].B);
                 double[] N = tri.ShapeInfo[i].N;
                 double j = tri.ShapeInfo[i].j;
 

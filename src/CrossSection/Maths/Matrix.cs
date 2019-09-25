@@ -29,7 +29,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace CrossSection.Maths
+namespace CrossSection.LinearAlgebra
 {
     /// <summary>
     /// Matrix operation wrapper

@@ -24,7 +24,7 @@
 
 using MathNet.Numerics.LinearAlgebra;
 
-namespace CrossSection.Maths
+namespace CrossSection.LinearAlgebra
 {
     /// <summary>
     /// Vector operations wrapper

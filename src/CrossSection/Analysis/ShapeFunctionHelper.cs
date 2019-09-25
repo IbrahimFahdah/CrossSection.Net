@@ -1,23 +1,20 @@
 ﻿using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using CrossSection.Maths;
-using CrossSection.Triangulation;
-using TriangleNet.Topology;
 namespace CrossSection.Analysis
 {
     class ShapeFunctionHelper
     {
         internal static readonly ConcurrentDictionary<int, double[,]> _gauss_points = new ConcurrentDictionary<int, double[,]>();
 
-        private readonly static Matrix tmp = new Matrix(new double[,]
+        private readonly static double[,] tmp =  
                                           {
                                                         {0, 0},
                                                         {1, 0},
                                                         {0, 1}
-                                          });
+                                          };
 
-        private readonly static Vector J_upper = new Vector(new[] { 1.0, 1.0, 1.0 });
+        private readonly static double[] J_upper = new[] { 1.0, 1.0, 1.0 };
 
         /// <summary>
         /// Computes shape functions, shape function derivatives and the determinant
@@ -28,7 +25,7 @@ namespace CrossSection.Analysis
         /// <param name="N">The value of the shape functions at the given Gauss point [1 x 6]</param>
         /// <param name="B">the derivative of the shape functions in the j-th global direction* B(i, j)* [2 x 6]</param>
         /// <param name="j">the determinant of the Jacobian matrix *j*</param>
-        internal static void shape_function(double[][] coords, double[] gauss_point, out double[] N, out Matrix B, out double j)
+        internal static void shape_function(double[][] coords, double[] gauss_point, out double[] N, out double[,] B, out double j)
         {
             // location of isoparametric co-ordinates for each Gauss point
             var eta = gauss_point[1];
@@ -47,42 +44,76 @@ namespace CrossSection.Analysis
                         };
 
 
-            var B_iso = new double[][]
+            var B_iso = new double[,]
                                                  {
-                                                 new double[]     {4 * eta - 1, 0, 0, 4 * xi, 0, 4 * zeta},
-                                                  new double[]      {0, 4 * xi - 1, 0, 4 * eta, 4 * zeta, 0},
-                                                  new double[]      {0, 0, 4 * zeta - 1, 0, 4 * xi, 4 * eta}
+                                                   {4 * eta - 1, 0, 0, 4 * xi, 0, 4 * zeta},
+                                                    {0, 4 * xi - 1, 0, 4 * eta, 4 * zeta, 0},
+                                                  {0, 0, 4 * zeta - 1, 0, 4 * xi, 4 * eta}
                                                  };
 
             var B_iso_Transpose = B_iso.Transpose();
 
             var J_lower = coords.Dot(B_iso_Transpose);
 
-            var rows = new double[3][];
-            rows[0] = J_upper.ToArray();
-            for (int i = 0; i < 2; i++)
+
+            var J = new double[3,3];
+            for (int i = 0; i < 3; i++)
             {
-                rows[i + 1] = J_lower.Row(i);
+                for (int k = 0; k < 3; k++)
+                {
+                    if(i==0)
+                    {
+                        J[0, k] = J_upper[k];
+                        continue;
+                    }
+                    J[i, k] = J_lower[i-1][k];
+                }
             }
 
-            Matrix J = new Matrix(rows);
+            var det = 0.0;
+            for (int i = 0; i < 3; i++)
+                det = det + (J[0, i] * (J[1, (i + 1) % 3] * J[2, (i + 2) % 3] - J[1, (i + 2) % 3] * J[2, (i + 1) % 3]));
 
             //calculate the jacobian
-            j = 0.5 * J.Determinant;
+            j = 0.5 * det;// J.Determinant;
 
-            B = new Matrix(2, 6);
+            B = new double[2, 6];
 
             if (j != 0)
             {
                 //#if the area of the element is not zero
                 //# cacluate the P matrix
 
-                var P = J.Inverse * tmp;
+                var P =InvertJ(J).Dot(tmp);
 
                 //# calculate the B matrix in terms of cartesian co-ordinates
-                B.Append((new Matrix(B_iso_Transpose) * P).Transpose);
+                B=(B_iso_Transpose.Dot(P)).Transpose();
             }
 
+         
+        }
+
+
+        private static double[,] InvertJ(double[,] m)
+        {
+            // computes the inverse of a matrix m
+            double det = m[0, 0] * (m[1, 1] * m[2, 2] - m[2, 1] * m[1, 2]) -
+                         m[0, 1] * (m[1, 0] * m[2, 2] - m[1, 2] * m[2, 0]) +
+                         m[0, 2] * (m[1, 0] * m[2, 1] - m[1, 1] * m[2, 0]);
+
+            double invdet = 1 / det;
+
+            double[,] minv=new double[3,3]; // inverse of matrix m
+            minv[0, 0] = (m[1, 1] * m[2, 2] - m[2, 1] * m[1, 2]) * invdet;
+            minv[0, 1] = (m[0, 2] * m[2, 1] - m[0, 1] * m[2, 2]) * invdet;
+            minv[0, 2] = (m[0, 1] * m[1, 2] - m[0, 2] * m[1, 1]) * invdet;
+            minv[1, 0] = (m[1, 2] * m[2, 0] - m[1, 0] * m[2, 2]) * invdet;
+            minv[1, 1] = (m[0, 0] * m[2, 2] - m[0, 2] * m[2, 0]) * invdet;
+            minv[1, 2] = (m[1, 0] * m[0, 2] - m[0, 0] * m[1, 2]) * invdet;
+            minv[2, 0] = (m[1, 0] * m[2, 1] - m[2, 0] * m[1, 1]) * invdet;
+            minv[2, 1] = (m[2, 0] * m[0, 1] - m[0, 0] * m[2, 1]) * invdet;
+            minv[2, 2] = (m[0, 0] * m[1, 1] - m[1, 0] * m[0, 1]) * invdet;
+            return minv;
         }
 
         /// <summary>
