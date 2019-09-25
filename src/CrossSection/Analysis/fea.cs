@@ -179,22 +179,21 @@ namespace CrossSection
             ExtendedTri tri, double ixx, double iyy, double ixy, double nu)
         {
             //# initialise stiffness matrix and load vector
-            Vector f_psi = new Vector(6);
-            Vector f_phi = new Vector(6);
+            var f_psi = new double[6];
+            var f_phi = new double[6];
 
             //# Gauss points for 6 point Gaussian integration
             var gps = ShapeFunctionHelper.gauss_points(6);
 
-            Matrix d = new Matrix(2, 1);
-            Matrix h = new Matrix(2, 1);
-
+            var d = new double[2];
+            var h = new double[2];
 
             for (int i = 0; i < gps.RowCount(); i++)
             {
                 var gp = gps.Row(i);
 
                 // shape_function(coords, gp, out N, ref B, out j);
-                Matrix B = new Matrix(tri.ShapeInfo[i].B);
+                var B = tri.ShapeInfo[i].B;
                 double[] N = tri.ShapeInfo[i].N;
                 double j = tri.ShapeInfo[i].j;
 
@@ -210,25 +209,37 @@ namespace CrossSection
                 var h1 = -ixy * r + iyy * q;
                 var h2 = -iyy * r - ixy * q;
 
-                d[0, 0] = d1;
-                d[1, 0] = d2;
-                h[0, 0] = h1;
-                h[1, 0] = h2;
+                //d[0, 0] = d1;
+                //d[1, 0] = d2;
+                //h[0, 0] = h1;
+                //h[1, 0] = h2;
 
-                var B_Transpose = B.Transpose;
+                //var B_Transpose = B.Transpose;
 
-                Vector tmp = new Vector(N);
-                tmp *= 2 * (1 + nu);
+                //Vector tmp = new Vector(N);
+                //tmp *= 2 * (1 + nu);
 
-                f_psi += gp[0] * (nu / 2 * (B_Transpose * d).Transpose.Row(0) +
-                                 tmp * (ixx * Nx - ixy * Ny)) * j * mat.elastic_modulus;
+                //f_psi += gp[0] * (nu / 2 * (B_Transpose * d).Transpose.Row(0) +
+                //                 tmp * (ixx * Nx - ixy * Ny)) * j * mat.elastic_modulus;
 
-                f_phi += gp[0] * (nu / 2 * (B_Transpose * h).Transpose.Row(0) +
-                                 tmp * (iyy * Ny - ixy * Nx)) * j * mat.elastic_modulus;
+                //f_phi += gp[0] * (nu / 2 * (B_Transpose * h).Transpose.Row(0) +
+                //                 tmp * (iyy * Ny - ixy * Nx)) * j * mat.elastic_modulus;
+
+                d[0] = d1;
+                d[1] = d2;
+                h[0] = h1;
+                h[1] = h2;
+
+                var B_Transpose = B.Transpose();
+
+                var NN = N.Dot(2 * (1 + nu));
+
+                f_psi.Append(B_Transpose.Dot(d).Dot(nu / 2).Append(NN.Dot(ixx * Nx - ixy * Ny)).Dot(gp[0] * j * mat.elastic_modulus));
+                f_phi.Append(B_Transpose.Dot(h).Dot(nu / 2).Append(NN.Dot(iyy * Ny - ixy * Nx)).Dot(gp[0] * j * mat.elastic_modulus));
 
             }
 
-            return (f_psi.ToArray(), f_phi.ToArray());
+            return (f_psi, f_phi);
         }
 
         /// <summary>
@@ -376,8 +387,6 @@ namespace CrossSection
             {
                 var gp = gps.Row(i);
 
-                // shape_function(coords, gp, out N, ref B, out j);
-                Matrix B = new Matrix(tri.ShapeInfo[i].B);
                 double[] N = tri.ShapeInfo[i].N;
                 double j = tri.ShapeInfo[i].j;
 
