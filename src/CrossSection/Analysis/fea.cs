@@ -27,7 +27,6 @@ using System.Collections.Generic;
 using CrossSection.Analysis;
 using CrossSection.DataModel;
 using CrossSection.Maths;
-using CrossSection.LinearAlgebra;
 namespace CrossSection
 {
     public class fea
@@ -51,16 +50,14 @@ namespace CrossSection
 
             //Gauss points for 6 point Gaussian integration
             var gps = ShapeFunctionHelper.gauss_points(6);
-            Matrix B = null;
-            double[,] BB;
+            double[,] B;
             double[] N;
             double j;
             for (int i = 0; i < gps.RowCount(); i++)
             {
                 var gp = gps.Row(i);
 
-                ShapeFunctionHelper.shape_function(coords, gp, out N, out BB, out j);
-                B = new Matrix(BB);
+                ShapeFunctionHelper.shape_function(coords, gp, out N, out B, out j);
                 area += gp[0] * j;
 
                 var x = N.Dot(coords.Row(1));
@@ -98,16 +95,14 @@ namespace CrossSection
             var force = 0.0;
 
             var gps = ShapeFunctionHelper.gauss_points(3);
-            Matrix B = null;
             double[] N;
             double j;
-            double[,] BB;
+            double[,] B;
             for (int i = 0; i < gps.RowCount(); i++)
             {
                 var gp = gps.Row(i);
 
-                ShapeFunctionHelper.shape_function(coords, gp, out N, out BB, out j);
-                B = new Matrix(BB);
+                ShapeFunctionHelper.shape_function(coords, gp, out N, out B, out j);
                 area += gp[0] * j;
 
                 var x = N.Dot(coords.Row(1));
@@ -271,8 +266,6 @@ namespace CrossSection
             {
                 var gp = gps.Row(i);
 
-                //shape_function(coords, gp, out N, ref B, out j);
-                Matrix B = new Matrix(tri.ShapeInfo[i].B);
                 double[] N = tri.ShapeInfo[i].N;
                 double j = tri.ShapeInfo[i].j;
 
@@ -307,7 +300,7 @@ namespace CrossSection
         /// <param name="nu">Effective Poisson's ratio for the cross-section</param>
         /// <returns></returns>
         internal (double kappa_x, double kappa_y, double kappa_xy) shear_coefficients(SectionMaterial mat,
-           ExtendedTri tri, double ixx, double iyy, double ixy, double[] psi_shear2, double[] phi_shear2, double nu)
+           ExtendedTri tri, double ixx, double iyy, double ixy, double[] psi_shear, double[] phi_shear, double nu)
         {
             //# initialise integrals
             var kappa_x = 0.0;
@@ -315,17 +308,16 @@ namespace CrossSection
             var kappa_xy = 0.0;
 
             var gps = ShapeFunctionHelper.gauss_points(6);
-            Vector d = new Vector(2);
-            Vector h = new Vector(2);
-            var psi_shear = new Vector(psi_shear2);
-            var phi_shear = new Vector(phi_shear2);
+            var d = new double[2];
+            var h = new double[2];
+            //var psi_shear = new Vector(psi_shear2);
+            //var phi_shear = new Vector(phi_shear2);
 
             for (int i = 0; i < gps.RowCount(); i++)
             {
                 var gp = gps.Row(i);
 
-                //shape_function(coords, gp, out N, ref B, out j);
-                Matrix B = new Matrix(tri.ShapeInfo[i].B);
+                var B = tri.ShapeInfo[i].B;
                 double[] N = tri.ShapeInfo[i].N;
                 double j = tri.ShapeInfo[i].j;
 
@@ -346,19 +338,19 @@ namespace CrossSection
                 h[0] = h1;
                 h[1] = h2;
 
-                var B_Transpose = B.Transpose;
+                var B_Transpose = B.Transpose();
 
-                var psi_shearXB_Transpose = psi_shear * B_Transpose - nu / 2 * d;
-                var BXphi_shear = (B * phi_shear - nu / 2 * h);
+                var psi_shearXB_Transpose = psi_shear.Dot(B_Transpose).Subtract(d.Dot(nu / 2));
+                var BXphi_shear = B.Dot(phi_shear).Subtract(h.Dot(nu / 2));
 
-                kappa_x += (gp[0] * (psi_shearXB_Transpose)
-                  * (B * psi_shear - nu / 2 * d) * j * mat.elastic_modulus);
+                kappa_x += psi_shearXB_Transpose.Dot(B.Dot(psi_shear).Subtract(d.Dot(nu / 2))) * (gp[0] * j * mat.elastic_modulus);
 
-                kappa_y += (gp[0] * (phi_shear * B_Transpose - nu / 2 * h)
-                    * (BXphi_shear) * j * mat.elastic_modulus);
 
-                kappa_xy += (gp[0] * (psi_shearXB_Transpose)
-                  * (BXphi_shear) * j * mat.elastic_modulus);
+                kappa_y += phi_shear.Dot(B_Transpose).Subtract(h.Dot(nu / 2)).Dot(BXphi_shear) * gp[0] * j * mat.elastic_modulus;
+
+
+                kappa_xy += psi_shearXB_Transpose.Dot(BXphi_shear) * (gp[0] * j * mat.elastic_modulus);
+
 
             }
 

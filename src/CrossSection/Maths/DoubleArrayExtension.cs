@@ -1,5 +1,4 @@
-﻿using CrossSection.Maths2;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -7,69 +6,6 @@ namespace CrossSection.Maths
 {
     internal static class DoubleArrayExtension
     {
-
-        public static bool istheSameAs(this double[,] A, double[,] B)
-        {
-            for (int i = 0; i < A.RowCount(); i++)
-            {
-                for (int j = 0; j < A.ColumnCount(); j++)
-                {
-                    if (A[i, j] != B[i, j])
-                    {
-                        return false;
-                    }
-                }
-            }
-
-            return true;
-
-        }
-
-        public static double[,] Dot(this double[,] A, double[,] B)
-        {
-
-            var R = new double[A.RowCount(), B.ColumnCount()];
-            for (int i = 0; i < R.RowCount(); i++)
-                for (int j = 0; j < R.ColumnCount(); j++)
-                    for (int k = 0; k < A.ColumnCount(); k++)
-                        R[i, j] += A[i, k] * B[k, j];
-            return R;
-
-        }
-
-        public static double[,] MultiplyBy(this double[,] A, double x)
-        {
-            for (int i = 0; i < A.RowCount(); i++)
-                for (int j = 0; j < A.ColumnCount(); j++)
-                    A[i, j] = A[i, j] * x;
-            return A;
-
-        }
-
-        //public static double[,] MultiplyBy(this double x, double[,] A)
-        //{
-        //    for (int i = 0; i < A.RowCount(); i++)
-        //        for (int j = 0; j < A.ColumnCount(); j++)
-        //            A[i, j] = A[i, j] * x;
-        //    return A;
-
-        //}
-
-        public static double[] MultiplyBy(this double x, double[] A)
-        {
-            for (int i = 0; i < A.Length; i++)
-                A[i] = A[i] * x;
-            return A;
-
-        }
-
-        public static double[] MultiplyBy(this double[] A, double x)
-        {
-            for (int i = 0; i < A.Length; i++)
-                A[i] = A[i] * x;
-            return A;
-
-        }
 
         public static void Append(this double[,] A, double[,] B)
         {
@@ -83,16 +19,6 @@ namespace CrossSection.Maths
 
             for (int i = 0; i < A.Length; i++)
                 A[i] += B[i];
-            return A;
-
-        }
-
-        public static double[] Append(this double[] A, LMatrix B)
-        {
-
-            for (int i = 0; i < A.Length; i++)
-                A[i] += B.mat[i];
-
             return A;
 
         }
@@ -132,14 +58,26 @@ namespace CrossSection.Maths
 
         }
 
+        public static double[,] Dot(this double[,] A, double[,] B)
+        {
+
+            var R = new double[A.RowCount(), B.ColumnCount()];
+            for (int i = 0; i < R.RowCount(); i++)
+                for (int j = 0; j < R.ColumnCount(); j++)
+                    for (int k = 0; k < A.ColumnCount(); k++)
+                        R[i, j] += A[i, k] * B[k, j];
+            return R;
+
+        }
+
         public static double[,] Dot(this double[,] A, double x)
         {
             var R = new double[A.RowCount(), A.ColumnCount()];
             for (int i = 0; i < A.RowCount(); i++)
                 for (int j = 0; j < A.ColumnCount(); j++)
-                    R[i, j] = A[i, j]*x;
+                    R[i, j] = A[i, j] * x;
 
-         
+
             return R;
 
         }
@@ -155,7 +93,8 @@ namespace CrossSection.Maths
             return R;
 
         }
-        public static double[] Dot(this  double x, double[] A)
+
+        public static double[] Dot(this double x, double[] A)
         {
             var R = new double[A.Length];
             for (int i = 0; i < A.Length; i++)
@@ -163,6 +102,7 @@ namespace CrossSection.Maths
             return R;
 
         }
+
         public static double[] Dot(this double[] A, double x)
         {
             var R = new double[A.Length];
@@ -171,7 +111,6 @@ namespace CrossSection.Maths
             return R;
 
         }
-
 
         public static double[][] Dot(this double[][] A, double[,] B)
         {
@@ -184,7 +123,7 @@ namespace CrossSection.Maths
                 {
                     for (int k = 0; k < A.ColumnCount(); k++)
                     {
-                        R[i][j] += A[i][k] * B[k,j];
+                        R[i][j] += A[i][k] * B[k, j];
                     }
                 }
             }
@@ -226,6 +165,19 @@ namespace CrossSection.Maths
 
         }
 
+        public static double[] Subtract(this double[] A, double[] B)
+        {
+
+            var R = new double[A.Length];
+            for (int i = 0; i < A.Length; i++)
+            {
+                R[i] = A[i] - B[i];
+            }
+
+            return R;
+
+        }
+
         public static double[] Dot(this double[,] A, double[] V)
         {
             var R = new double[A.RowCount()];
@@ -240,11 +192,15 @@ namespace CrossSection.Maths
 
         public static double[] Dot(this double[] V, double[,] A)
         {
-            var R = new double[V.Length];
+            var R = new double[A.ColumnCount()];
 
-            for (int i = 0; i < V.Length; i++)
-                for (int j = 0; j < A.ColumnCount(); j++)
-                    R[i] += V[j] * A[j, i];
+            for (int j = 0; j < A.ColumnCount(); j++)
+            {
+                for (int i = 0; i < A.RowCount(); i++)
+                {
+                    R[j] += V[i] * A[i, j];
+                }
+            }
 
             return R;
 
@@ -260,6 +216,7 @@ namespace CrossSection.Maths
 
             return R;
         }
+
         public static double[] Row(this double[][] A, int i)
         {
             return A[i];
@@ -284,6 +241,57 @@ namespace CrossSection.Maths
         {
             return A.GetLength(1);
         }
+
+        //public static bool istheSameAs(this double[,] A, double[,] B)
+        //{
+        //    for (int i = 0; i < A.RowCount(); i++)
+        //    {
+        //        for (int j = 0; j < A.ColumnCount(); j++)
+        //        {
+        //            if (A[i, j] != B[i, j])
+        //            {
+        //                return false;
+        //            }
+        //        }
+        //    }
+
+        //    return true;
+
+        //}
+
+        //public static double[,] MultiplyBy(this double[,] A, double x)
+        //{
+        //    for (int i = 0; i < A.RowCount(); i++)
+        //        for (int j = 0; j < A.ColumnCount(); j++)
+        //            A[i, j] = A[i, j] * x;
+        //    return A;
+
+        //}
+
+        //public static double[,] MultiplyBy(this double x, double[,] A)
+        //{
+        //    for (int i = 0; i < A.RowCount(); i++)
+        //        for (int j = 0; j < A.ColumnCount(); j++)
+        //            A[i, j] = A[i, j] * x;
+        //    return A;
+
+        //}
+
+        //public static double[] MultiplyBy(this double x, double[] A)
+        //{
+        //    for (int i = 0; i < A.Length; i++)
+        //        A[i] = A[i] * x;
+        //    return A;
+
+        //}
+
+        //public static double[] MultiplyBy(this double[] A, double x)
+        //{
+        //    for (int i = 0; i < A.Length; i++)
+        //        A[i] = A[i] * x;
+        //    return A;
+
+        //}
 
     }
 }

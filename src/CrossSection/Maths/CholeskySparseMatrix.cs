@@ -160,7 +160,9 @@ namespace CrossSection.Maths
             {
                 var columnIndices = new List<int>();
                 var values = new List<double>();
-                for (int col = 0; col < n; col++)
+
+                //read upper half of the array
+                for (int col = row; col < n; col++)
                 {
                     if (array[row, col] != 0)
                     {

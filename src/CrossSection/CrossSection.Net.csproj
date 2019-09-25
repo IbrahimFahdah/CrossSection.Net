@@ -17,12 +17,12 @@
 
   <ItemGroup>
     <Compile Remove="DataModel\SectionPart.cs" />
+    <Compile Remove="Maths\LMatrix.cs" />
+    <Compile Remove="Maths\Matrix.cs" />
+    <Compile Remove="Maths\Vector.cs" />
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="MathNet.Numerics">
-      <HintPath>..\libs\MathNet.Numerics.dll</HintPath>
-    </Reference>
     <Reference Include="Newtonsoft.Json">
       <HintPath>..\libs\Newtonsoft.Json.dll</HintPath>
     </Reference>

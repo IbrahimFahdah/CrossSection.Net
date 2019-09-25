@@ -319,7 +319,7 @@ namespace SectionProTests
 
         }
 
-        private JObject BuildTestData(SectionDefinition sec, string testName, bool replaceExpected = true)
+        private JObject BuildTestData(SectionDefinition sec, string testName, bool replaceExpected = false)
         {
             string data = JsonConvert.SerializeObject(sec.Output.SectionProperties);
             JObject actual = JsonConvert.DeserializeObject<JObject>(data);

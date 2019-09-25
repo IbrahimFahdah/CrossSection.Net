@@ -62,12 +62,12 @@ namespace CrossSection.Maths
 
                 var Vi = Rows[i];
                 var sum = Vi[i];
-                for (var k = 0; k < Vi.ValueCount; k++)
+                for (var k = Vi.ValueCount-1; k >= 0; k--)
                 {
                     ref var k_ind = ref Vi.Indices[k];
                     if (k_ind > i - 1)
                     {
-                        break;
+                        continue;
                     }
 
                     var Lik = Vi.Values[k];
@@ -76,17 +76,17 @@ namespace CrossSection.Maths
                     Rik[k_ind] = Lik;
                     if (Lik != 0)
                     {
-                        lastNonZero = k_ind;
-                        if (firstNonZero == -1)
+                        firstNonZero  = k_ind;
+                        if (lastNonZero == -1)
                         {
-                            firstNonZero = lastNonZero;
+                            lastNonZero = k_ind;
                         }
                     }
                 }
 
                 if (sum <= 0.0) //A, with rounding errors, is not positive-definite.
                 {
-                    throw new System.SystemException("Cholesky failed");
+                 throw new System.SystemException("Cholesky failed");
                 }
 
                 Vi[i] = Math.Sqrt(sum);
@@ -95,16 +95,17 @@ namespace CrossSection.Maths
                 {
                     sum2 = Vi[j];
                     var Vj = Rows[j];
-                    if (lastNonZero != -1)
+                    if (firstNonZero != -1)
                     {
-                        for (var k = 0; k < Vj.ValueCount; k++)
+                        for (var k = Vj.ValueCount - 1; k >= 0; k--)
                         {
                             ref var k_ind = ref Vj.Indices[k];
-                            if (k_ind < firstNonZero)
+                           
+                            if (k_ind > lastNonZero)
                             {
                                 continue;
                             }
-                            if (k_ind > lastNonZero)
+                            if (k_ind < firstNonZero)
                             {
                                 break;
                             }
@@ -131,6 +132,17 @@ namespace CrossSection.Maths
                     L[i, j] = Rows[i, j];
                 }
             }
+
+            //CholeskyDecom tmp = new CholeskyDecom(Arg);
+            //for (i = 0; i < n; i++)
+            //{
+            //    for (j = 0; j <= i; j++)
+            //    {
+            //        if(tmp.L[i, j] - L[i, j]!=0)
+            //        Debug.WriteLine(tmp.L[i, j] - L[i, j]);
+            //    }
+            //}
+
 
         }
 

@@ -67,7 +67,7 @@ namespace CrossSection.Analysis
             (var K, var f_torsion) = assemble_torsion(sec, _mesh, Tris, nodeCount);
 
             //solve Cholesky decomposition. 
-            var Cholesky = new CholeskyDecom(K);
+            var Cholesky = new CholeskyDecomOptimized(K);
 
 
 
