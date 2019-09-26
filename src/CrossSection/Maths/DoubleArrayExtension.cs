@@ -1,4 +1,28 @@
-﻿using System;
+﻿// <copyright>
+//https://github.com/IbrahimFahdah/CrossSection.Net
+
+//Copyright(c) 2019 Ibrahim Fahdah
+
+//Permission is hereby granted, free of charge, to any person obtaining a copy
+//of this software and associated documentation files (the "Software"), to deal
+//in the Software without restriction, including without limitation the rights
+//to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+//copies of the Software, and to permit persons to whom the Software is
+//furnished to do so, subject to the following conditions:
+
+//The above copyright notice and this permission notice shall be included in all
+//copies or substantial portions of the Software.
+
+//THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+//IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+//FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+//AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+//LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+//OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+//SOFTWARE.
+//</copyright>
+
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -9,8 +33,11 @@ namespace CrossSection.Maths
 
         public static void Append(this double[,] A, double[,] B)
         {
-            for (int i = 0; i < A.RowCount(); i++)
-                for (int j = 0; j < A.ColumnCount(); j++)
+            int rowCount = A.RowCount();
+            int columnCount = A.ColumnCount();
+
+            for (int i = 0; i < rowCount; i++)
+                for (int j = 0; j < columnCount; j++)
                     A[i, j] += B[i, j];
         }
 
@@ -23,17 +50,17 @@ namespace CrossSection.Maths
 
         }
 
-        public static double[,] Transpose(this double[,] arr)
+        public static double[,] Transpose(this double[,] A)
         {
-            int rowCount = arr.RowCount();
-            int columnCount = arr.ColumnCount();
+            int rowCount = A.RowCount();
+            int columnCount = A.ColumnCount();
             double[,] transposed = new double[columnCount, rowCount];
 
             for (int column = 0; column < columnCount; column++)
             {
                 for (int row = 0; row < rowCount; row++)
                 {
-                    transposed[column, row] = arr[row, column];
+                    transposed[column, row] = A[row, column];
                 }
             }
             return transposed;
@@ -60,7 +87,6 @@ namespace CrossSection.Maths
 
         public static double[,] Dot(this double[,] A, double[,] B)
         {
-
             var R = new double[A.RowCount(), B.ColumnCount()];
             for (int i = 0; i < R.RowCount(); i++)
                 for (int j = 0; j < R.ColumnCount(); j++)
@@ -72,9 +98,12 @@ namespace CrossSection.Maths
 
         public static double[,] Dot(this double[,] A, double x)
         {
-            var R = new double[A.RowCount(), A.ColumnCount()];
-            for (int i = 0; i < A.RowCount(); i++)
-                for (int j = 0; j < A.ColumnCount(); j++)
+            int rowCount = A.RowCount();
+            int columnCount = A.ColumnCount();
+
+            var R = new double[rowCount, columnCount];
+            for (int i = 0; i < rowCount; i++)
+                for (int j = 0; j < columnCount; j++)
                     R[i, j] = A[i, j] * x;
 
 
@@ -84,9 +113,11 @@ namespace CrossSection.Maths
 
         public static double[,] Dot(this double x, double[,] A)
         {
-            var R = new double[A.RowCount(), A.ColumnCount()];
-            for (int i = 0; i < A.RowCount(); i++)
-                for (int j = 0; j < A.ColumnCount(); j++)
+            int rowCount = A.RowCount();
+            int columnCount = A.ColumnCount();
+            var R = new double[rowCount, columnCount];
+            for (int i = 0; i < rowCount; i++)
+                for (int j = 0; j < columnCount; j++)
                     R[i, j] = A[i, j] * x;
 
 
@@ -180,10 +211,13 @@ namespace CrossSection.Maths
 
         public static double[] Dot(this double[,] A, double[] V)
         {
-            var R = new double[A.RowCount()];
+            int rowCount = A.RowCount();
+            int columnCount = A.ColumnCount();
 
-            for (int i = 0; i < A.RowCount(); i++)
-                for (int j = 0; j < A.ColumnCount(); j++)
+            var R = new double[rowCount];
+
+            for (int i = 0; i < rowCount; i++)
+                for (int j = 0; j < columnCount; j++)
                     R[i] += A[i, j] * V[j];
 
             return R;
@@ -192,11 +226,14 @@ namespace CrossSection.Maths
 
         public static double[] Dot(this double[] V, double[,] A)
         {
-            var R = new double[A.ColumnCount()];
+            int rowCount = A.RowCount();
+            int columnCount = A.ColumnCount();
 
-            for (int j = 0; j < A.ColumnCount(); j++)
+            var R = new double[columnCount];
+
+            for (int j = 0; j < columnCount; j++)
             {
-                for (int i = 0; i < A.RowCount(); i++)
+                for (int i = 0; i < rowCount; i++)
                 {
                     R[j] += V[i] * A[i, j];
                 }

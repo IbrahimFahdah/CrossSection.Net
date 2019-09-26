@@ -1,4 +1,28 @@
-﻿using System;
+﻿// <copyright>
+//https://github.com/IbrahimFahdah/CrossSection.Net
+
+//Copyright(c) 2019 Ibrahim Fahdah
+
+//Permission is hereby granted, free of charge, to any person obtaining a copy
+//of this software and associated documentation files (the "Software"), to deal
+//in the Software without restriction, including without limitation the rights
+//to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+//copies of the Software, and to permit persons to whom the Software is
+//furnished to do so, subject to the following conditions:
+
+//The above copyright notice and this permission notice shall be included in all
+//copies or substantial portions of the Software.
+
+//THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+//IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+//FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+//AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+//LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+//OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+//SOFTWARE.
+//</copyright>
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -39,7 +63,7 @@ namespace CrossSection.Maths
             public double At(int index)
             {
                 // Search if item index exists in NonZeroIndices array in range "0 - nonzero values count"
-                var itemIndex = Array.BinarySearch(Indices, 0, ValueCount, index);
+                var itemIndex = BinarySearch(Indices, 0, ValueCount, index);
                 return itemIndex >= 0 ? Values[itemIndex] : 0.0;
             }
 
@@ -50,7 +74,7 @@ namespace CrossSection.Maths
             public void At(int index, double value)
             {
                 // Search if "index" already exists in range "0 - nonzero values count"
-                var itemIndex = Array.BinarySearch(Indices, 0, ValueCount, index);
+                var itemIndex = BinarySearch(Indices, 0, ValueCount, index);
                 if (itemIndex >= 0)
                 {
                     // Non-zero item found in matrix
@@ -144,6 +168,36 @@ namespace CrossSection.Maths
                 return delta;
             }
 
+            static int BinarySearch(int[] arr, int index, int length, int value)
+            {
+                /*  Array.BinarySearch(arr, start, end, i)  can be used instead of the local implementation. It will be a bit slower though since 
+                Array.BinarySearch need is more generic and does some checking.
+                */
+                return Array_BinarySearch(arr, index, length, value);
+            }
+            static int Array_BinarySearch(int[] array, int index, int length, int value)
+            {
+
+                int lo = index;
+                int hi = index + length - 1;
+                while (lo <= hi)
+                {
+                    int i = lo + ((hi - lo) >> 1);
+                    int order = array[i].CompareTo(value);
+
+                    if (order == 0) return i;
+                    if (order < 0)
+                    {
+                        lo = i + 1;
+                    }
+                    else
+                    {
+                        hi = i - 1;
+                    }
+                }
+
+                return ~lo;
+            }
         }
         // Master dictionary hold rows of column dictionary
         protected SparseVector[] _rows;
