@@ -26,7 +26,7 @@ namespace ConsoleApp1
             SectionMaterial defaultMat = new SectionMaterial("dummy", 1, 1.0, 0.0, 1.0);
 
             SectionDefinition sec = new SectionDefinition();
-            sec.SolutionSettings = new SolutionSettings(0, 200);
+            sec.SolutionSettings = new SolutionSettings(0, 50);
 
             List<Point2D> boundary = new List<Point2D>();
             boundary.Add(new Point2D(0, 0));

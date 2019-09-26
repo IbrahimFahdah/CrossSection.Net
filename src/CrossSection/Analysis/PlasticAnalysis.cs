@@ -104,7 +104,7 @@ namespace CrossSection.Analysis
 
             //self.check_convergence(r, '11-axis')
             secPro.y22_pc = y22_pc;
-            secPro.s11 = f * Math.Abs(c_top_p.y2 - c_bot_p.y2);
+            secPro.s11 = f11 * Math.Abs(c_top_p.y2 - c_bot_p.y2);
 
             //# 2b) Calculate 22-axis plastic centroid
             fibres_y = new[] { fibres.u_min, fibres.u_max };
@@ -117,7 +117,7 @@ namespace CrossSection.Analysis
 
             //self.check_convergence(r, '22-axis')
             secPro.x11_pc = x11_pc;
-            secPro.s22 = f * Math.Abs(c_top_p.x2 - c_bot_p.x2);
+            secPro.s22 = f22 * Math.Abs(c_top_p.x2 - c_bot_p.x2);
         }
 
 
