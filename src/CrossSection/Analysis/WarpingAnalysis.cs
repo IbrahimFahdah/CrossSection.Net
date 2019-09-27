@@ -53,11 +53,10 @@ namespace CrossSection.Analysis
         ///* Monosymmetry constant
         /// </summary>
         /// <param name="sec"></param>
-        public void Solve(SectionDefinition sec)
+        public void Solve(SectionDefinition sec, Mesh mesh)
         {
             _sec = sec;
-
-            _mesh = _sec.Triangulate();
+            _mesh = mesh;
 
             var maxId = _mesh.Vertices.Max(x => x.ID);
 

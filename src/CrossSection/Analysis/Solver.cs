@@ -24,6 +24,7 @@
 
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 using CrossSection.DataModel;
 using CrossSection.Triangulation;
 using TriangleNet;
@@ -33,12 +34,9 @@ namespace CrossSection.Analysis
     public class Solver
     {
         private readonly fea _fea = new fea();
-         object obj = new object();
+
         public void Solve(SectionDefinition sec)
         {
-           lock(obj)
-            { 
-
             var mesh = sec.Triangulate();
 
             GeomAnalysis(sec, mesh);
@@ -46,19 +44,33 @@ namespace CrossSection.Analysis
             //# shift contours such that the origin is at the centroid
             sec.ShiftPoints(-sec.Output.SectionProperties.cx, -sec.Output.SectionProperties.cy);
 
-            if (sec.SolutionSettings.RunPlasticAnalysis)
+            /*==============need to triangulate as the section may have been shifted.
+             * WARNING: Triangulate is not thread-safe
+             * */
+            var mesh2 = sec.Triangulate();
+            //===============
+            var t1 = Task.Run(() =>
+           {
+               if (sec.SolutionSettings.RunPlasticAnalysis)
+               {
+                   new PlasticAnalysis().Solve(sec, mesh2);
+               }
+           });
+
+            var t2 = Task.Run(() =>
             {
-                new PlasticAnalysis().Solve(sec);
-            }
-            if (sec.SolutionSettings.RunWarpingAnalysis)
-            {
-                new WarpingAnalysis().Solve(sec);
-            }
+                if (sec.SolutionSettings.RunWarpingAnalysis)
+                {
+                    new WarpingAnalysis().Solve(sec, mesh2);
+                }
+            });
+
+            t1.Wait();
+            t2.Wait();
 
             // restore contours original location
             sec.ShiftPoints(sec.Output.SectionProperties.cx, sec.Output.SectionProperties.cy);
         }
-    }
 
         private void GeomAnalysis(SectionDefinition sec, Mesh mesh)
         {
@@ -68,7 +80,7 @@ namespace CrossSection.Analysis
                 var e = mat.elastic_modulus;
                 var g = mat.shear_modulus;
 
-               var  ( area,  qx,  qy,  ixx,  iyy,  ixy) = _fea.geometric_properties(item.GetTriCoords());
+                var (area, qx, qy, ixx, iyy, ixy) = _fea.geometric_properties(item.GetTriCoords());
 
                 sec.Output.SectionProperties.Area += area;
                 sec.Output.SectionProperties.ea += area * e;
@@ -86,7 +98,7 @@ namespace CrossSection.Analysis
             calculate_centroidal_properties(sec, mesh);
         }
 
-       private void calculate_centroidal_properties(SectionDefinition sec, Mesh mesh)
+        private void calculate_centroidal_properties(SectionDefinition sec, Mesh mesh)
         {
             SectionProperties secPro = sec.Output.SectionProperties;
 

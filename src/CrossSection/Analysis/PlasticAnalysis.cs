@@ -39,12 +39,10 @@ namespace CrossSection.Analysis
         Mesh _mesh;
         SectionDefinition _sec;
 
-        public void Solve(SectionDefinition sec)
+        public void Solve(SectionDefinition sec, Mesh mesh)
         {
             _sec = sec;
-
-            //need to triangulate as the section may have been shifted 
-            _mesh = _sec.Triangulate();
+            _mesh = mesh;
 
             calculate_plastic_properties(sec, _mesh);
         }
@@ -84,7 +82,6 @@ namespace CrossSection.Analysis
                     secPro.syy = f2 * Math.Abs(c_top2.x - c_bot2.x);
               
             });
-        
 
             //# 2) Calculate plastic properties for principal axis
             //# convert principal axis angle to radians
@@ -128,7 +125,7 @@ namespace CrossSection.Analysis
                 secPro.s22 = f22 * Math.Abs(c_top_p22.x2 - c_bot_p22.x2);
             });
 
-           Task.WaitAll(new []{t3,t4 });
+           Task.WaitAll(new []{ t1, t2,t3, t4 });
         }
 
 
