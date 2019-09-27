@@ -75,7 +75,7 @@ namespace CrossSection.Analysis
 
         public int Label => _tri.Label;
 
-        public double[][] coords => _tri.GetTriCoords();
+        public double[,] coords => _tri.GetTriCoords();
 
         internal void TriangleData(out int n0, out int n1, out int n2, out int n3, out int n4, out int n5)
         {

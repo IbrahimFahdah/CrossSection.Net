@@ -33,9 +33,11 @@ namespace CrossSection.Analysis
     public class Solver
     {
         private readonly fea _fea = new fea();
-
+         object obj = new object();
         public void Solve(SectionDefinition sec)
         {
+           lock(obj)
+            { 
 
             var mesh = sec.Triangulate();
 
@@ -44,18 +46,19 @@ namespace CrossSection.Analysis
             //# shift contours such that the origin is at the centroid
             sec.ShiftPoints(-sec.Output.SectionProperties.cx, -sec.Output.SectionProperties.cy);
 
-            if(sec.SolutionSettings.RunPlasticAnalysis)
+            if (sec.SolutionSettings.RunPlasticAnalysis)
             {
                 new PlasticAnalysis().Solve(sec);
             }
             if (sec.SolutionSettings.RunWarpingAnalysis)
             {
-                new WarpingAnalysis().Solve(sec); 
+                new WarpingAnalysis().Solve(sec);
             }
 
             // restore contours original location
             sec.ShiftPoints(sec.Output.SectionProperties.cx, sec.Output.SectionProperties.cy);
         }
+    }
 
         private void GeomAnalysis(SectionDefinition sec, Mesh mesh)
         {

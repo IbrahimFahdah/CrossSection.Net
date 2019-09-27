@@ -38,7 +38,7 @@ namespace CrossSection
         /// <param name="coords"></param>
         /// <returns>Tuple containing the geometric properties and the elastic
         /// and shear moduli of the element: *(area, qx, qy, ixx, iyy, ixy, e, g)</returns>
-        public (double area, double qx, double qy, double ixx, double iyy, double ixy) geometric_properties(double[][] coords)
+        public (double area, double qx, double qy, double ixx, double iyy, double ixy) geometric_properties(double[,] coords)
         {
             // initialise geometric properties
             var area = 0.0;
@@ -85,7 +85,7 @@ namespace CrossSection
         /// <param name="p">Point on the line</param>
         /// <returns></returns>
         public (double f_el, double ea_el, double qx_el, double qy_el, bool is_above) plastic_properties(SectionMaterial mat,
-               double[][] coords, double[] u, double[] p)
+               double[,] coords, double[] u, double[] p)
         {
             //# initialise geometric properties
             var e = mat.elastic_modulus;

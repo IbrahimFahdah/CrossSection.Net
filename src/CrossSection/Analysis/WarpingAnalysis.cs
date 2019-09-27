@@ -25,6 +25,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using CrossSection.DataModel;
 using CrossSection.Maths;
 using CrossSection.Triangulation;
@@ -69,49 +70,58 @@ namespace CrossSection.Analysis
             //solve Cholesky decomposition. 
             var Cholesky = new CholeskyDecomOptimized(K);
 
+            double[] omega = null;
+            var task1 = Task.Run(() =>
+            {
+                //# solve for warping function
+                omega = Cholesky.Solve(f_torsion);
 
+                sec.Output.SectionProperties.omega = omega;
 
-            //# solve for warping function
-            var omega = Cholesky.Solve(f_torsion);
-
-            sec.Output.SectionProperties.omega = omega.ToArray();
-
-            //# determine the torsion constant
-            sec.Output.SectionProperties.j = sec.Output.SectionProperties.ixx_c + sec.Output.SectionProperties.iyy_c - omega.Dot(K).Dot(omega);
+                //# determine the torsion constant
+                sec.Output.SectionProperties.j = sec.Output.SectionProperties.ixx_c + sec.Output.SectionProperties.iyy_c - omega.Dot(K).Dot(omega);
+            });
 
             //======================# assemble shear function load vectors
-            var f_psi = new double[nodeCount];
-            var f_phi = new double[nodeCount];
+            double[] psi_shear = null;
+            double[] phi_shear = null;
 
-            int n0, n1, n2, n3, n4, n5;
-
-            foreach (var item in Tris)
+            var task2 = Task.Run(() =>
             {
-
-                var mat = sec.Contours.First(c => c.Material?.Id == item.Label).Material;
-                item.TriangleData(out n0, out n1, out n2, out n3, out n4, out n5);
-
-                var ixx_c = sec.Output.SectionProperties.ixx_c;
-                var iyy_c = sec.Output.SectionProperties.iyy_c;
-                var ixy_c = sec.Output.SectionProperties.ixy_c;
-                (double[] f_psi, double[] f_phi) el = _fea.shear_load_vectors(mat, item, ixx_c, iyy_c,
-                    ixy_c, sec.Output.SectionProperties.nu_eff);
-
-                var n = new[] { n0, n1, n2, n3, n4, n5 };
-
-                for (int i = 0; i < 6; i++)
+                var f_psi = new double[nodeCount];
+                var f_phi = new double[nodeCount];
+                int n0, n1, n2, n3, n4, n5;
+                foreach (var item in Tris)
                 {
-                    f_psi[n[i]] += el.f_psi[i];
-                    f_phi[n[i]] += el.f_phi[i];
-                }
-            }
 
-            //# solve for shear functions psi and phi
-            var psi_shear = Cholesky.Solve(f_psi);
-            var phi_shear = Cholesky.Solve(f_phi);
-            sec.Output.SectionProperties.psi_shear = psi_shear.ToArray();
-            sec.Output.SectionProperties.phi_shear = phi_shear.ToArray();
+                    var mat = sec.Contours.First(c => c.Material?.Id == item.Label).Material;
+                    item.TriangleData(out n0, out n1, out n2, out n3, out n4, out n5);
+
+                    var ixx_c = sec.Output.SectionProperties.ixx_c;
+                    var iyy_c = sec.Output.SectionProperties.iyy_c;
+                    var ixy_c = sec.Output.SectionProperties.ixy_c;
+                    (double[] f_psi, double[] f_phi) el = _fea.shear_load_vectors(mat, item, ixx_c, iyy_c,
+                        ixy_c, sec.Output.SectionProperties.nu_eff);
+
+                    var n = new[] { n0, n1, n2, n3, n4, n5 };
+
+                    for (int i = 0; i < 6; i++)
+                    {
+                        f_psi[n[i]] += el.f_psi[i];
+                        f_phi[n[i]] += el.f_phi[i];
+                    }
+                }
+
+                //# solve for shear functions psi and phi
+                psi_shear = Cholesky.Solve(f_psi);
+                phi_shear = Cholesky.Solve(f_phi);
+                sec.Output.SectionProperties.psi_shear = psi_shear;
+                sec.Output.SectionProperties.phi_shear = phi_shear;
+            });
             //\======================
+
+            task1.Wait();
+            task2.Wait();
 
             //======================# assemble shear centre and warping moment integrals
             var sc_xint = 0.0;
@@ -123,6 +133,7 @@ namespace CrossSection.Analysis
 
             foreach (var item in Tris)
             {
+                int n0, n1, n2, n3, n4, n5;
                 var mat = sec.Contours.First(c => c.Material?.Id == item.Label).Material;
                 item.TriangleData(out n0, out n1, out n2, out n3, out n4, out n5);
 
@@ -152,6 +163,8 @@ namespace CrossSection.Analysis
             }
 
             //\======================
+
+
 
             //======================# calculate shear centres (elasticity approach)
             var Delta_s = 2 * (1 + sec.Output.SectionProperties.nu_eff) * (
@@ -190,112 +203,119 @@ namespace CrossSection.Analysis
             y_se * i_xomega + x_se * i_yomega);
             //\======================
 
-
-            //# ======================# assemble shear deformation coefficients
-            var kappa_x = 0.0;
-            var kappa_y = 0.0;
-            var kappa_xy = 0.0;
-
-
-            foreach (var item in Tris)
+            var task3 = Task.Run(() =>
             {
-                var mat = sec.Contours.First(c => c.Material?.Id == item.Label).Material;
-                item.TriangleData(out n0, out n1, out n2, out n3, out n4, out n5);
+                //# ======================# assemble shear deformation coefficients
+                var kappa_x = 0.0;
+                var kappa_y = 0.0;
+                var kappa_xy = 0.0;
 
-                var ixx_c = sec.Output.SectionProperties.ixx_c;
-                var iyy_c = sec.Output.SectionProperties.iyy_c;
-                var ixy_c = sec.Output.SectionProperties.ixy_c;
-                var nu_eff = sec.Output.SectionProperties.nu_eff;
-                var n = new[] { n0, n1, n2, n3, n4, n5 };
-
-                var psi_shear2 = new double[6];
-                var phi_shear2 = new double[6];
-                for (int i = 0; i < 6; i++)
+                int n0, n1, n2, n3, n4, n5;
+                foreach (var item in Tris)
                 {
-                    psi_shear2[i] = psi_shear[n[i]];
-                    phi_shear2[i] = phi_shear[n[i]];
+                    var mat = sec.Contours.First(c => c.Material?.Id == item.Label).Material;
+                    item.TriangleData(out n0, out n1, out n2, out n3, out n4, out n5);
+
+                    var ixx_c = sec.Output.SectionProperties.ixx_c;
+                    var iyy_c = sec.Output.SectionProperties.iyy_c;
+                    var ixy_c = sec.Output.SectionProperties.ixy_c;
+                    var nu_eff = sec.Output.SectionProperties.nu_eff;
+                    var n = new[] { n0, n1, n2, n3, n4, n5 };
+
+                    var psi_shear2 = new double[6];
+                    var phi_shear2 = new double[6];
+                    for (int i = 0; i < 6; i++)
+                    {
+                        psi_shear2[i] = psi_shear[n[i]];
+                        phi_shear2[i] = phi_shear[n[i]];
+                    }
+
+                    (var kappa_x_el, var kappa_y_el, var kappa_xy_el) =
+                        _fea.shear_coefficients(mat, item, ixx_c, iyy_c, ixy_c, psi_shear2, phi_shear2, nu_eff);
+
+
+                    kappa_x += kappa_x_el;
+                    kappa_y += kappa_y_el;
+                    kappa_xy += kappa_xy_el;
+
                 }
 
-                (var kappa_x_el, var kappa_y_el, var kappa_xy_el) =
-                    _fea.shear_coefficients(mat, item, ixx_c, iyy_c, ixy_c, psi_shear2, phi_shear2, nu_eff);
+                //# calculate shear areas wrt global axis
+                sec.Output.SectionProperties.A_sx = Delta_s * Delta_s / kappa_x;
+                sec.Output.SectionProperties.A_sy = Delta_s * Delta_s / kappa_y;
+                sec.Output.SectionProperties.A_sxy = Delta_s * Delta_s / kappa_xy;
 
+                //# calculate shear areas wrt principal bending axis:
+                var alpha_xx = kappa_x * sec.Output.SectionProperties.Area / (Delta_s * Delta_s);
+                var alpha_yy = kappa_y * sec.Output.SectionProperties.Area / (Delta_s * Delta_s);
+                var alpha_xy = kappa_xy * sec.Output.SectionProperties.Area / (Delta_s * Delta_s);
 
-                kappa_x += kappa_x_el;
-                kappa_y += kappa_y_el;
-                kappa_xy += kappa_xy_el;
-
-            }
-
-            //# calculate shear areas wrt global axis
-            sec.Output.SectionProperties.A_sx = Delta_s * Delta_s / kappa_x;
-            sec.Output.SectionProperties.A_sy = Delta_s * Delta_s / kappa_y;
-            sec.Output.SectionProperties.A_sxy = Delta_s * Delta_s / kappa_xy;
-
-            //# calculate shear areas wrt principal bending axis:
-            var alpha_xx = kappa_x * sec.Output.SectionProperties.Area / (Delta_s * Delta_s);
-            var alpha_yy = kappa_y * sec.Output.SectionProperties.Area / (Delta_s * Delta_s);
-            var alpha_xy = kappa_xy * sec.Output.SectionProperties.Area / (Delta_s * Delta_s);
-
-            //# rotate the tensor by the principal axis angle
-            var phi_rad = sec.Output.SectionProperties.phi * Math.PI / 180;
-            var R = new double[,]{ { Math.Cos (phi_rad), Math.Sin (phi_rad) },
+                //# rotate the tensor by the principal axis angle
+                var phi_rad = sec.Output.SectionProperties.phi * Math.PI / 180;
+                var R = new double[,]{ { Math.Cos (phi_rad), Math.Sin (phi_rad) },
                        { -Math.Sin (phi_rad), Math.Cos (phi_rad) } };
 
-            var alpha = new double[,]{ { alpha_xx, alpha_xy },
+                var alpha = new double[,]{ { alpha_xx, alpha_xy },
                        { alpha_xy, alpha_yy } };
 
-            var rotatedAlpha = R.Dot(alpha).Dot(R.Transpose());
+                var rotatedAlpha = R.Dot(alpha).Dot(R.Transpose());
 
-            //# recalculate the shear area based on the rotated alpha value
-            sec.Output.SectionProperties.A_s11 = sec.Output.SectionProperties.Area / rotatedAlpha[0, 0];
-            sec.Output.SectionProperties.A_s22 = sec.Output.SectionProperties.Area / rotatedAlpha[1, 1];
-
+                //# recalculate the shear area based on the rotated alpha value
+                sec.Output.SectionProperties.A_s11 = sec.Output.SectionProperties.Area / rotatedAlpha[0, 0];
+                sec.Output.SectionProperties.A_s22 = sec.Output.SectionProperties.Area / rotatedAlpha[1, 1];
+            });
             //\======================
 
             //======================  # calculate the monosymmetry consants
-
-            var int_x = 0.0;
-            var int_y = 0.0;
-            var int_11 = 0.0;
-            var int_22 = 0.0;
-            foreach (var item in Tris)
+            var task4 = Task.Run(() =>
             {
-                var mat = sec.Contours.First(c => c.Material?.Id == item.Label).Material;
-                item.TriangleData(out n0, out n1, out n2, out n3, out n4, out n5);
+                var int_x = 0.0;
+                var int_y = 0.0;
+                var int_11 = 0.0;
+                var int_22 = 0.0;
+                int n0, n1, n2, n3, n4, n5;
+                foreach (var item in Tris)
+                {
+                    var mat = sec.Contours.First(c => c.Material?.Id == item.Label).Material;
+                    item.TriangleData(out n0, out n1, out n2, out n3, out n4, out n5);
 
 
-                var phi = sec.Output.SectionProperties.phi;
-                var n = new[] { n0, n1, n2, n3, n4, n5 };
+                    var phi = sec.Output.SectionProperties.phi;
+                    var n = new[] { n0, n1, n2, n3, n4, n5 };
 
-                (var int_x_el, var int_y_el, var int_11_el, var int_22_el) =
-                    _fea.monosymmetry_integrals(mat, item, phi);
+                    (var int_x_el, var int_y_el, var int_11_el, var int_22_el) =
+                        _fea.monosymmetry_integrals(mat, item, phi);
 
 
-                int_x += int_x_el;
-                int_y += int_y_el;
-                int_11 += int_11_el;
-                int_22 += int_22_el;
+                    int_x += int_x_el;
+                    int_y += int_y_el;
+                    int_11 += int_11_el;
+                    int_22 += int_22_el;
 
-            }
+                }
 
-            //# calculate the monosymmetry constants
-            sec.Output.SectionProperties.beta_x_plus = (
-                 -int_x / sec.Output.SectionProperties.ixx_c + 2 * sec.Output.SectionProperties.y_se);
-            sec.Output.SectionProperties.beta_x_minus = (
-                 int_x / sec.Output.SectionProperties.ixx_c - 2 * sec.Output.SectionProperties.y_se);
-            sec.Output.SectionProperties.beta_y_plus = (
-                 -int_y / sec.Output.SectionProperties.iyy_c + 2 * sec.Output.SectionProperties.x_se);
-            sec.Output.SectionProperties.beta_y_minus = (
-                 int_y / sec.Output.SectionProperties.iyy_c - 2 * sec.Output.SectionProperties.x_se);
-            sec.Output.SectionProperties.beta_11_plus = (
-                 -int_11 / sec.Output.SectionProperties.i11_c + 2 * sec.Output.SectionProperties.y22_se);
-            sec.Output.SectionProperties.beta_11_minus = (
-                 int_11 / sec.Output.SectionProperties.i11_c - 2 * sec.Output.SectionProperties.y22_se);
-            sec.Output.SectionProperties.beta_22_plus = (
-                 -int_22 / sec.Output.SectionProperties.i22_c + 2 * sec.Output.SectionProperties.x11_se);
-            sec.Output.SectionProperties.beta_22_minus = (
-                 int_22 / sec.Output.SectionProperties.i22_c - 2 * sec.Output.SectionProperties.x11_se);
-            //\======================
+                //# calculate the monosymmetry constants
+                sec.Output.SectionProperties.beta_x_plus = (
+                     -int_x / sec.Output.SectionProperties.ixx_c + 2 * sec.Output.SectionProperties.y_se);
+                sec.Output.SectionProperties.beta_x_minus = (
+                     int_x / sec.Output.SectionProperties.ixx_c - 2 * sec.Output.SectionProperties.y_se);
+                sec.Output.SectionProperties.beta_y_plus = (
+                     -int_y / sec.Output.SectionProperties.iyy_c + 2 * sec.Output.SectionProperties.x_se);
+                sec.Output.SectionProperties.beta_y_minus = (
+                     int_y / sec.Output.SectionProperties.iyy_c - 2 * sec.Output.SectionProperties.x_se);
+                sec.Output.SectionProperties.beta_11_plus = (
+                     -int_11 / sec.Output.SectionProperties.i11_c + 2 * sec.Output.SectionProperties.y22_se);
+                sec.Output.SectionProperties.beta_11_minus = (
+                     int_11 / sec.Output.SectionProperties.i11_c - 2 * sec.Output.SectionProperties.y22_se);
+                sec.Output.SectionProperties.beta_22_plus = (
+                     -int_22 / sec.Output.SectionProperties.i22_c + 2 * sec.Output.SectionProperties.x11_se);
+                sec.Output.SectionProperties.beta_22_minus = (
+                     int_22 / sec.Output.SectionProperties.i22_c - 2 * sec.Output.SectionProperties.x11_se);
+                //\======================
+            });
+
+            task3.Wait();
+            task4.Wait();
         }
 
 

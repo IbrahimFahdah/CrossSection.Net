@@ -38,11 +38,9 @@ namespace CrossSection.Triangulation
     public static class TriExtensions
     {
 
-         public static double[][] GetTriCoords(this Triangle item)
+        public static double[,] GetTriCoords(this Triangle item)
         {
-            var coords = new double[2][];
-            coords[0] = new double[6];
-            coords[1] = new double[6];
+            var coords = new double[2,6];
 
             //Node 3 between 0,1
             //Node 4 between 1,2
@@ -63,19 +61,19 @@ namespace CrossSection.Triangulation
             var y5 = (y2 + y0) * 0.5;
 
 
-            coords[0][ 0] = x0;
-            coords[0][ 1] = x1;
-            coords[0][ 2] = x2;
-            coords[0][ 3] = x3;
-            coords[0][ 4] = x4;
-            coords[0][ 5] = x5;
-               
-            coords[1][ 0] = y0;
-            coords[1][ 1] = y1;
-            coords[1][ 2] = y2;
-            coords[1][ 3] = y3;
-            coords[1][ 4] = y4;
-            coords[1][ 5] = y5;
+            coords[0,0] = x0;
+            coords[0,1] = x1;
+            coords[0,2] = x2;
+            coords[0,3] = x3;
+            coords[0,4] = x4;
+            coords[0,5] = x5;
+                    
+            coords[1,0] = y0;
+            coords[1,1] = y1;
+            coords[1,2] = y2;
+            coords[1,3] = y3;
+            coords[1,4] = y4;
+            coords[1,5] = y5;
 
             return coords;
         }
@@ -115,7 +113,7 @@ namespace CrossSection.Triangulation
                 _polygon.Add(new Contour(contour.Points.Select(p =>
                 new Vertex(p.X, p.Y) { ID = i++ })));
             }
-           
+
             CreatedRegions(sec, _polygon);
 
             return _polygon;
@@ -197,7 +195,7 @@ namespace CrossSection.Triangulation
             }
 
             //GetRegionPointer(contour) is not used because doesn't consider contour inside another such a hole
-             //_polygon.Regions.Add(GetRegionPointer(contour));
+            //_polygon.Regions.Add(GetRegionPointer(contour));
         }
 
         private static double CalculateMeshArea(Mesh mesh)

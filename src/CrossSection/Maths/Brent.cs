@@ -36,7 +36,7 @@ namespace CrossSection.Maths
     /// Algorithm by Brent, Van Wijngaarden, Dekker et al.
     /// Implementation inspired by Press, Teukolsky, Vetterling, and Flannery, "Numerical Recipes in C", 2nd edition, Cambridge University Press
     /// </summary>
-    public static class Brent
+    public class Brent
     {
         /// <summary>
         /// The number of binary digits used to represent the binary number for a double precision floating
@@ -70,7 +70,7 @@ namespace CrossSection.Maths
         /// <param name="maxIterations">Maximum number of iterations. Usually 100.</param>
         /// <param name="root">The root that was found, if any. Undefined if the function returns false.</param>
         /// <returns>True if a root with the specified accuracy was found, else false.</returns>
-        public static bool TryFindRoot(Func<double, double> f, double lowerBound, double upperBound, double accuracy, int maxIterations, out double root)
+        public bool TryFindRoot(Func<double, double> f, double lowerBound, double upperBound, double accuracy, int maxIterations, out double root)
         {
             double fmin = f(lowerBound);
             double fmax = f(upperBound);
@@ -111,7 +111,7 @@ namespace CrossSection.Maths
                 double xMidOld = xMid;
                 xMid = (upperBound - root)/2.0;
 
-                if (Math.Abs(xMid) <= xAcc1 || froot.AlmostEqualNormRelative(0, froot, accuracy))
+                if (Math.Abs(xMid) <= xAcc1 || AlmostEqualNormRelative(froot,0, froot, accuracy))
                 {
                     return true;
                 }
@@ -128,7 +128,7 @@ namespace CrossSection.Maths
                     double s = froot/fmin;
                     double p;
                     double q;
-                    if (lowerBound.AlmostEqualRelative(upperBound))
+                    if (AlmostEqualRelative(lowerBound,upperBound))
                     {
                         p = 2.0*xMid*s;
                         q = 1.0 - s;
@@ -199,7 +199,7 @@ namespace CrossSection.Maths
         /// <param name="a">The first number</param>
         /// <param name="b">The second number</param>
         /// <returns>true if the two values differ by no more than 10 * 2^(-52); false otherwise.</returns>
-        static bool AlmostEqualRelative(this double a, double b)
+        static bool AlmostEqualRelative(double a, double b)
         {
             return AlmostEqualNormRelative(a, b, a - b, DefaultDoubleAccuracy);
         }
@@ -213,7 +213,7 @@ namespace CrossSection.Maths
         /// <param name="diff">The norm of the difference of the two values (can be negative).</param>
         /// <param name="maximumError">The accuracy required for being almost equal.</param>
         /// <returns>True if both doubles are almost equal up to the specified maximum error, false otherwise.</returns>
-         static bool AlmostEqualNormRelative(this double a, double b, double diff, double maximumError)
+         static bool AlmostEqualNormRelative(double a, double b, double diff, double maximumError)
         {
             // If A or B are infinity (positive or negative) then
             // only return true if they are exactly equal to each other -

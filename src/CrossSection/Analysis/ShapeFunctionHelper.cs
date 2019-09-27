@@ -49,7 +49,7 @@ namespace CrossSection.Analysis
         /// <param name="N">The value of the shape functions at the given Gauss point [1 x 6]</param>
         /// <param name="B">the derivative of the shape functions in the j-th global direction* B(i, j)* [2 x 6]</param>
         /// <param name="j">the determinant of the Jacobian matrix *j*</param>
-        internal static void shape_function(double[][] coords, double[] gauss_point, out double[] N, out double[,] B, out double j)
+        internal static void shape_function(double[,] coords, double[] gauss_point, out double[] N, out double[,] B, out double j)
         {
             // location of isoparametric co-ordinates for each Gauss point
             var eta = gauss_point[1];
@@ -90,7 +90,7 @@ namespace CrossSection.Analysis
                         J[0, k] = J_upper[k];
                         continue;
                     }
-                    J[i, k] = J_lower[i-1][k];
+                    J[i, k] = J_lower[i-1,k];
                 }
             }
 
