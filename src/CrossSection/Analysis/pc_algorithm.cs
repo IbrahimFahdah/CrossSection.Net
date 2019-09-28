@@ -22,12 +22,13 @@
 //SOFTWARE.
 //</copyright>
 
-using System;
-using System.Linq;
 using CrossSection.DataModel;
 using CrossSection.Maths;
 using CrossSection.Triangulation;
+using System.Collections.Generic;
+using System.Linq;
 using TriangleNet;
+using TriangleNet.Topology;
 
 namespace CrossSection.Analysis
 {
@@ -91,7 +92,7 @@ namespace CrossSection.Analysis
             return (d, r, _f_top, _c_top, _c_bot);
         }
 
-     
+
 
         /// <summary>
         /// Given a distance *d* from the centroid to an axis (defined by unit vector* u*),
@@ -139,24 +140,29 @@ namespace CrossSection.Analysis
                 var contour = sec.Contours.FirstOrDefault(c => c.Material?.Id == item.Label);
                 var mat = contour.Material;
 
-                var (f_el, ea_el, qx_el, qy_el, is_above) =
-                    _fea.plastic_properties(mat, item.GetTriCoords(), u, p);
+                var lst = SplitTri(item, u, p);
+                foreach (var Coords in lst)
+                {
+                    var (f_el, ea_el, qx_el, qy_el, is_above) =
+                  _fea.plastic_properties(mat, Coords, u, p);
 
-                //# assign force and area properties to the top or bottom segments
-                if (is_above)
-                {
-                    f.top += f_el;
-                    ea.top += ea_el;
-                    qx.top += qx_el;
-                    qy.top += qy_el;
+                    //# assign force and area properties to the top or bottom segments
+                    if (is_above)
+                    {
+                        f.top += f_el;
+                        ea.top += ea_el;
+                        qx.top += qx_el;
+                        qy.top += qy_el;
+                    }
+                    else
+                    {
+                        f.bot += f_el;
+                        ea.bot += ea_el;
+                        qx.bot += qx_el;
+                        qy.bot += qy_el;
+                    }
                 }
-                else
-                {
-                    f.bot += f_el;
-                    ea.bot += ea_el;
-                    qx.bot += qx_el;
-                    qy.bot += qy_el;
-                }
+
             }
 
 
@@ -167,5 +173,105 @@ namespace CrossSection.Analysis
 
             return (f.top, f.bot);
         }
+
+        /// <summary>
+        /// Split the triangle to three ones if the axis intersect with the triangle.
+        /// </summary>
+        /// <param name="tri"></param>
+        /// <param name="u">axis direction</param>
+        /// <param name="p">point on the axis</param>
+        /// <returns></returns>
+        private List<double[,]> SplitTri(Triangle tri, double[] u, double[] p)
+        {
+            var coords = tri.GetTriCoords3();
+
+            var x1 = coords[0, 0];
+            var x2 = coords[0, 1];
+            var x3 = coords[0, 2];
+
+            var y1 = coords[1, 0];
+            var y2 = coords[1, 1];
+            var y3 = coords[1, 2];
+
+            var p12 = LineSegementsIntersect(x1, y1, x2, y2, u, p);
+            var p13 = LineSegementsIntersect(x1, y1, x3, y3, u, p);
+            var p23 = LineSegementsIntersect(x2, y2, x3, y3, u, p);
+
+            List<double[,]> lst = new List<double[,]>();
+
+            /*N.B. the numbering orientation of the coordinates of the new triangles are important.
+             * They follow the original triangle (anti-clockwise).*/
+            if (p12 != null && p13 != null)
+            {
+                //tri1 => p1->p12->p13
+                //tri2 => p13->p12->p3
+                //tri3 => p12->p2->p3
+                var tri1 = TriExtensions.GetTriCoords6(x1, p12.X, p13.X, y1, p12.Y, p13.Y);
+                var tri2 = TriExtensions.GetTriCoords6(p13.X, p12.X, x3, p13.Y, p12.Y, y3);
+                var tri3 = TriExtensions.GetTriCoords6(p12.X, x2, x3, p12.Y, y2, y3);
+
+                lst.Add(tri1);
+                lst.Add(tri2);
+                lst.Add(tri3);
+            }
+            else if (p12 != null && p23 != null)
+            {
+                var tri1 = TriExtensions.GetTriCoords6(x1, p12.X, x3, y1, p12.Y, y3);
+                var tri2 = TriExtensions.GetTriCoords6(p12.X, p23.X, x3, p12.Y, p23.Y, y3);
+                var tri3 = TriExtensions.GetTriCoords6(p12.X, x2, p23.X, p12.Y, y2, p23.Y);
+
+                lst.Add(tri1);
+                lst.Add(tri2);
+                lst.Add(tri3);
+            }
+            else if (p13 != null && p23 != null)
+            {
+                var tri1 = TriExtensions.GetTriCoords6(p13.X, p23.X, x3, p13.Y, p23.Y, y3);
+                var tri2 = TriExtensions.GetTriCoords6(x1, p23.X, p13.X, y1, p23.Y, p13.Y);
+                var tri3 = TriExtensions.GetTriCoords6(x1, x2, p23.X, y1, y2, p23.Y);
+
+                lst.Add(tri1);
+                lst.Add(tri2);
+                lst.Add(tri3);
+            }
+            else
+            {
+                //no intersection or intersection at vertex. tri => p1->p2->p3
+                lst.Add(tri.GetTriCoords());
+            }
+
+            return lst;
+        }
+
+        private Point2D LineSegementsIntersect(double x1, double y1, double x2, double y2, double[] rr, double[] pp)
+        {
+            var q1 = new Vector2D(x1, y1);
+            var q2 = new Vector2D(x2, y2);
+            var s = q2 - q1;
+
+            var p = new Vector2D(pp[0], pp[1]);
+            var r = new Vector2D(rr[0], rr[1]);
+
+            //# cacluate intersection point between p -> p + r and q -> q + s
+            //#if the lines are not parallel
+            if (r.Cross(s) != 0)
+            {
+                //# calculate t and u
+                var t = Vector2D.Cross(q1 - p, s) / Vector2D.Cross(r, s);
+                var u = Vector2D.Cross(p - q1, r) / Vector2D.Cross(s, r);
+                var new_pt = p + t * r;
+
+                // #if the line lies within q -> q + s and the point hasn't
+                if (u >= 0 && u <= 1)
+                {
+                    return new Point2D(new_pt.X, new_pt.Y);
+                }
+            }
+
+
+            return null;
+
+        }
+
     }
 }

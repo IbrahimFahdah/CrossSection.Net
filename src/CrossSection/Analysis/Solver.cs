@@ -56,7 +56,7 @@ namespace CrossSection.Analysis
                    new PlasticAnalysis().Solve(sec, mesh2);
                }
            });
-
+            
             var t2 = Task.Run(() =>
             {
                 if (sec.SolutionSettings.RunWarpingAnalysis)
