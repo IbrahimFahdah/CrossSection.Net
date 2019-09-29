@@ -254,6 +254,33 @@ namespace SectionProTests
         }
 
         [TestMethod]
+        public void CustomSec3_Test()
+        {
+            SectionDefinition sec = new SectionDefinition(nameof(CustomSec3_Test));
+            sec.SolutionSettings = new SolutionSettings(0.002);
+
+            sec.Contours.Add(new SectionContour(helper.CreateRectangle(300, 180), false, defaultMat));
+
+            var c1 = new SectionContour(helper.CreateCircle(15, 50), true, defaultMat);
+            c1.ShiftPoints(30, 30);
+            var c2 = new SectionContour(helper.CreateCircle(15, 50), true, defaultMat);
+            c2.ShiftPoints(150, 30);
+            var c3 = new SectionContour(helper.CreateCircle(15, 50), true, defaultMat);
+            c3.ShiftPoints(150, 270);
+            var c4 = new SectionContour(helper.CreateCircle(15, 50), true, defaultMat);
+            c4.ShiftPoints(30, 270);
+
+            sec.Contours.Add(c1);
+            sec.Contours.Add(c2);
+            sec.Contours.Add(c3);
+            sec.Contours.Add(c4);
+
+            _solver.Solve(sec);
+            Compare(nameof(CustomSec3_Test), sec);
+
+        }
+
+        [TestMethod]
         public void CustomSec2_Test()
         {
             SectionDefinition sec = new SectionDefinition(nameof(CustomSec2_Test));
@@ -314,9 +341,6 @@ namespace SectionProTests
             JObject expectedJson = JsonConvert.DeserializeObject<JObject>(expected);
 
             Compare(expectedJson, actual);
-
-
-
         }
 
         private JObject BuildTestData(SectionDefinition sec, string testName, bool replaceExpected = false)
